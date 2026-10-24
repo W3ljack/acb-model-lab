@@ -1,0 +1,628 @@
+<title>ACB Model Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a sports-site front page. Dark masthead + score ticker, a lead story with a headline rail,
+   then stories that each open with a headline, dek and byline and carry their own charts. */
+:root{
+  --bg:#edf0f5; --card:#ffffff; --ink:#111318; --ink2:#3f4653; --muted:#6c7484; --rule:#dcdfe5; --track:#e7eaef;
+  --mast:#0d1b2e; --mast-ink:#f4f6fa; --mast-muted:#9fb0c6; --mast-rule:#1d3048;
+  --brand:#f2b200; --brand-text:#946600; --brand-ink:#0d1b2e;
+  --accent:#2a78d6; --accent-soft:#cde2fb; --c2:#eb6834; --c3:#1baf7a; --neutral:#a9afba;
+  --good:#0f9d3a; --bad:#d03b3b;
+  --f-head:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c0e11; --card:#161920; --ink:#eef0f4; --ink2:#bfc5cf; --muted:#8b93a1; --rule:#272c35; --track:#222730;
+  --mast:#081322; --mast-ink:#f4f6fa; --mast-muted:#8fa1b8; --mast-rule:#18293f;
+  --brand:#f5bd1f; --brand-text:#f5bd1f; --brand-ink:#0d1b2e;
+  --accent:#3987e5; --accent-soft:#1c3a5f; --c2:#d95926; --c3:#199e70; --neutral:#4d5562;
+  --good:#3cc25d; --bad:#e66767; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c0e11; --card:#161920; --ink:#eef0f4; --ink2:#bfc5cf; --muted:#8b93a1; --rule:#272c35; --track:#222730;
+  --mast:#081322; --mast-ink:#f4f6fa; --mast-muted:#8fa1b8; --mast-rule:#18293f;
+  --brand:#f5bd1f; --brand-text:#f5bd1f; --brand-ink:#0d1b2e;
+  --accent:#3987e5; --accent-soft:#1c3a5f; --c2:#d95926; --c3:#199e70; --neutral:#4d5562;
+  --good:#3cc25d; --bad:#e66767; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--mast)}
+.wrap{max-width:1140px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.n,.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+/* masthead */
+.mast{background:var(--mast);color:var(--mast-ink);position:sticky;top:env(safe-area-inset-top,0px);z-index:6;border-bottom:3px solid var(--brand)}
+.mast .wrap{display:flex;align-items:center;gap:18px;padding-block:10px;min-width:0}
+.logo{font-family:var(--f-head);font-weight:800;font-style:italic;font-size:26px;letter-spacing:.01em;line-height:1;white-space:nowrap;text-decoration:none;color:var(--mast-ink);display:flex;align-items:center;gap:8px}
+.logo b{background:var(--brand);color:var(--brand-ink);padding:2px 7px 1px;border-radius:3px;font-style:italic}
+.mast nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0;margin-left:auto}
+.mast nav a{flex:none;color:var(--mast-muted);text-decoration:none;font-family:var(--f-head);font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase;padding:6px 10px;border-radius:4px}
+.mast nav a:hover{color:var(--mast-ink);background:var(--mast-rule)}
+/* ticker */
+.ticker{background:var(--card);border-bottom:1px solid var(--rule)}
+.ticker .wrap{display:flex;align-items:stretch;gap:0;overflow-x:auto;scrollbar-width:thin}
+.tk-label{flex:none;font-family:var(--f-head);font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-text);padding:10px 14px 10px 0;display:flex;flex-direction:column;justify-content:center;line-height:1.1;border-right:1px solid var(--rule)}
+.tk-label small{color:var(--muted);font-weight:600;letter-spacing:.04em}
+.tk{flex:none;min-width:168px;padding:8px 14px;border-right:1px solid var(--rule);display:grid;gap:2px;font-size:13px}
+.tk .d{font:500 10px var(--f-data);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tk .t{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.tk .t span:last-child{font-family:var(--f-data);font-weight:500}
+.tk .t.fav span:first-child::after{content:" ●";color:var(--brand-text);font-size:9px;vertical-align:2px}
+/* story furniture */
+.kicker{font-family:var(--f-head);font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-text)}
+.headline{font-family:var(--f-head);font-weight:800;line-height:.98;margin:4px 0 8px;text-wrap:balance;letter-spacing:.005em}
+.dek{color:var(--ink2);font-size:17px;max-width:62ch;margin:0}
+.byline{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-top:12px}
+.byline img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+.byline b{color:var(--ink);font-weight:600}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;min-width:0}
+.pad{padding:18px}
+/* lead */
+.lead{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;padding-block:30px 6px}
+.lead-main{padding:24px}
+.lead-main .headline{font-size:clamp(38px,5.4vw,60px)}
+.rail{padding:16px 18px}
+.rail h3{font-family:var(--f-head);font-weight:800;font-size:18px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px;padding-bottom:8px;border-bottom:3px solid var(--ink)}
+.rail ol{list-style:none;margin:0;padding:0;counter-reset:h}
+.rail li{border-bottom:1px solid var(--rule)}
+.rail li:last-child{border-bottom:none}
+.rail a{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:11px 0;text-decoration:none;color:var(--ink)}
+.rail .stat{font-family:var(--f-head);font-weight:800;font-size:26px;line-height:1;min-width:64px;color:var(--brand-text)}
+.rail .hl{font-weight:600;font-size:14px;line-height:1.35}
+.rail a:hover .hl{text-decoration:underline}
+.lead-figure{margin-top:24px}
+@media (max-width:900px){.lead{grid-template-columns:1fr}}
+/* sections */
+section{padding-block:30px 6px;scroll-margin-top:64px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;border-top:4px solid var(--ink);padding-top:10px;margin-bottom:14px}
+.sec-head h2{font-family:var(--f-head);font-weight:800;font-size:22px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.sec-head span{color:var(--muted);font-size:13px}
+.story{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.story .headline{font-size:clamp(30px,4vw,42px)}
+@media (max-width:900px){.story{grid-template-columns:1fr}}
+.numbers{padding:16px 18px}
+.numbers h4{font-family:var(--f-head);font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px;color:var(--brand-text)}
+.numbers dl{margin:0;display:grid}
+.numbers .row{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--rule)}
+.numbers .row:last-child{border-bottom:none}
+.numbers dt{font-family:var(--f-head);font-weight:800;font-size:28px;line-height:1;min-width:70px}
+.numbers dd{margin:0;font-size:13.5px;color:var(--ink2)}
+.stack{display:grid;gap:16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px}
+.panel-head h3{font-family:var(--f-head);font-weight:800;font-size:22px;line-height:1.05;margin:0;letter-spacing:.01em}
+.panel-head p{margin:3px 0 0;color:var(--muted);font-size:13px;max-width:62ch}
+.note{font-size:13px;color:var(--muted);margin:10px 0 0;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+button.chip{font:700 13px var(--f-head);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:5px 10px;cursor:pointer}
+button.chip[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+select{font:500 14px var(--f-body);color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:6px 8px}
+label.inline{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.scroll{overflow-x:auto}
+svg{display:block;max-width:100%}
+svg.wb{max-width:none}
+svg text{fill:var(--muted);font-family:var(--f-data);font-size:11px}
+svg .lbl{fill:var(--ink2);font-family:var(--f-body);font-size:12px}
+details{margin-top:12px}
+summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink2)}
+details .dl{margin-top:10px;font-size:14px;color:var(--ink2);display:grid;gap:6px;max-width:76ch}
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font:700 12px var(--f-head);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:2px solid var(--ink);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+td.club{font-weight:700;white-space:nowrap}
+td.rk{font-family:var(--f-head);font-weight:800;font-size:18px;width:30px;color:var(--ink2)}
+th.n,td.n{text-align:right;white-space:nowrap}
+.cut td{border-bottom:2px dashed var(--muted)}
+.zone{font:700 10px var(--f-head);letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:3px;margin-left:6px;vertical-align:1px}
+.zone.po{color:var(--accent);border:1px solid currentColor}
+.zone.rl{color:var(--c2);border:1px solid currentColor}
+.delta.up{color:var(--good)} .delta.dn{color:var(--bad)}
+.meter{position:relative;display:inline-block;width:56px;height:8px;background:var(--track);border-radius:4px;vertical-align:middle;margin-left:8px;overflow:hidden}
+.meter>b{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:4px}
+.meter.risk>b{background:var(--c2)}
+/* picks */
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.game{border:1px solid var(--rule);border-radius:6px;padding:12px;display:grid;gap:8px;min-width:0;background:var(--card)}
+.game .date{font:500 11px var(--f-data);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;display:flex;justify-content:space-between}
+.game .date b{color:var(--brand-text);font-family:var(--f-head);font-weight:800;letter-spacing:.06em;font-size:12px}
+.game .teams{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-weight:700}
+.game .teams .s{font-family:var(--f-data);font-weight:500;text-align:right}
+.split{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px}
+.split b{background:var(--accent)} .split i{background:var(--track)}
+.game .row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:var(--f-data)}
+/* tooltip */
+#tip{position:fixed;z-index:20;pointer-events:none;background:var(--ink);color:var(--card);font-size:12px;line-height:1.4;padding:7px 9px;border-radius:4px;max-width:260px;opacity:0;transition:opacity .08s}
+#tip.on{opacity:1}
+/* shots */
+.shotrow{display:grid;grid-template-columns:minmax(110px,170px) 1fr auto;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.shotrow:last-child{border-bottom:none}
+.shotrow .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.shotrow .who small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.sbar{display:flex;height:14px;gap:2px;border-radius:3px;overflow:hidden;min-width:0}
+.sbar span{display:block;height:100%}
+.sbar .unk{background:repeating-linear-gradient(135deg,var(--track) 0 4px,transparent 4px 8px);flex:1}
+.tag{font:700 10px var(--f-head);letter-spacing:.08em;text-transform:uppercase;color:var(--c2);border:1px solid currentColor;border-radius:3px;padding:1px 5px;white-space:nowrap}
+.pct{font-family:var(--f-data);font-size:12px;color:var(--ink2);white-space:nowrap}
+/* coming soon + about */
+.soon{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:18px;border-left:6px solid var(--brand)}
+.soon .date{font-family:var(--f-head);font-weight:800;font-size:40px;line-height:.9;text-align:center;color:var(--brand-text)}
+.soon .date small{display:block;font-size:14px;letter-spacing:.08em;color:var(--muted)}
+.about{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px}
+@media (max-width:860px){.about{grid-template-columns:1fr}}
+.about p{margin:0 0 12px;color:var(--ink2);max-width:66ch}
+.about h3{font-family:var(--f-head);font-weight:800;font-size:28px;line-height:1;margin:2px 0 12px}
+.me{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:start}
+a.li{display:inline-block;font:800 15px var(--f-head);letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:var(--brand-ink);background:var(--brand);padding:7px 12px;border-radius:4px}
+.me img{width:120px;height:120px;border-radius:6px;object-fit:cover;border-bottom:4px solid var(--brand)}
+@media (max-width:480px){.me{grid-template-columns:1fr}}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:14px 0 4px}
+.facts div{border-top:3px solid var(--ink);padding-top:6px}
+.facts b{display:block;font-family:var(--f-head);font-weight:800;font-size:26px;line-height:1}
+.facts span{font-size:12.5px;color:var(--muted)}
+footer{margin-top:36px;background:var(--mast);color:var(--mast-muted);font-size:13px}
+footer .wrap{padding-block:24px 36px;display:grid;gap:6px}
+footer b{color:var(--mast-ink)}
+@media (max-width:560px){.pad,.lead-main{padding:16px}.panel{padding:14px}.hide-sm{display:none}.mast .logo{font-size:22px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="mast"><div class="wrap">
+  <a class="logo" href="#top" aria-label="ACB Model Lab, top of page"><b>ACB</b>MODEL LAB</a>
+  <nav aria-label="Sections"><a href="#about">About</a><a href="#standings">Standings</a><a href="#picks">Picks</a><a href="#record">Track record</a><a href="#referees">Referees</a><a href="#attendance">Attendance</a><a href="#shots">Shooting</a></nav>
+</div></header>
+<div class="ticker" id="top"><div class="wrap" id="ticker"></div></div>
+
+<main class="wrap">
+
+<section id="about">
+  <div class="sec-head"><h2>About</h2></div>
+  <div class="about">
+    <div class="card pad">
+      <div class="kicker">The project</div>
+      <h3>One league, every box score, tested models</h3>
+      <p>ACB Model Lab is an independent analytics project on Spain's Liga Endesa, one of the strongest basketball leagues outside the NBA. It started as a question about player projections and grew into a full pipeline: every ACB box score back to the mid-1980s, shot charts for ten seasons, referee assignments matched across 25 years, attendance, closing betting odds from BetExplorer (used only to benchmark the model) and the 2026-27 calendar, all in one database.</p>
+      <p>Every model on this page was tested the same way: predict a season it has never seen, then compare. Ideas that did not survive that test were dropped, and the misses that remain are shown, not hidden. The page updates after every round.</p>
+      <div class="facts" id="facts"></div>
+    </div>
+    <div class="card pad">
+      <div class="kicker">About me</div>
+      <div class="me">
+        <img src="data:image/jpeg;base64,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" alt="Waleed El-Jack">
+        <div>
+          <h3>Waleed El-Jack</h3>
+          <p>I'm a Sudanese-American with a background in finance and business analytics and a lifelong passion for basketball.</p>
+          <p>I earned my Bachelor's in Business Administration, with a concentration in Finance, from Boston University's Questrom School of Business, and started my career as a Financial Analyst at Mondelēz International, working on financial planning and analysis, forecasting, financial modeling and data-driven decision-making.</p>
+          <p>That work pulled me toward data science, and I went on to earn a Master of Science in Business Analytics (MSBA) at the University of Miami, building my skills in Python, R, SQL, Tableau and Power BI with a focus on statistical modeling, machine learning, predictive analytics and data visualization.</p>
+          <p>Basketball has always been a big part of my life. I grew up playing competitive basketball in Wisconsin, and over time my interests in the game and in analytics converged: how data can explain player performance, team dynamics and what drives winning. ACB Model Lab is where they meet.</p>
+          <p><a class="li" href="https://www.linkedin.com/in/waleed-el-jack/" target="_blank" rel="noopener">Connect on LinkedIn →</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="lead">
+  <article class="card lead-main">
+    <div class="kicker" id="leadKicker"></div>
+    <h1 class="headline" id="leadHead"></h1>
+    <p class="dek" id="leadDek"></p>
+    <div class="lead-figure">
+      <div class="panel-head" style="margin-bottom:6px"><div><h3>Top of the table</h3><p>Projected regular-season wins for the top six. Each club plays 34 league games, home and away against the other 17. The dot is the most likely total; the bar covers the middle 80% of 20,000 simulated seasons.</p></div></div>
+      <div id="leadChart"></div>
+    </div>
+  </article>
+  <aside class="card rail" aria-label="Top stories">
+    <h3>Top stories</h3>
+    <ol id="rail"></ol>
+  </aside>
+</div>
+
+<section id="standings">
+  <div class="sec-head"><h2>Power rankings</h2><span id="stdNote"></span></div>
+  <div class="panel">
+    <div class="panel-head"><div><h3>Projected final table</h3><p>Projected wins from the 34-game regular season (every club plays the other 17 home and away). The bar is the middle 80% of simulated seasons; the grey tick is where the model had the club before round 1. Top eight make the playoffs, bottom two go down.</p></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>projected wins</span><span><i style="background:var(--accent-soft)"></i>80% range</span><span><i style="background:var(--muted);width:2px"></i>pre-season</span></div></div>
+    <div class="scroll"><table id="standingsTbl"></table></div>
+  </div>
+</section>
+
+<section id="picks">
+  <div class="sec-head"><h2 id="picksTitle">Picks</h2><span>Win probability, projected score and total for every game</span></div>
+  <div class="games" id="games"></div>
+  <p class="note">Totals use this season's scoring level, which is running well above last season's. The 80% range is how far a game total usually lands from the projection.</p>
+</section>
+
+<section id="record">
+  <div class="sec-head"><h2>Track record</h2><span>Every prediction scored against a result that came after it</span></div>
+  <div class="story">
+    <div class="stack">
+      <div class="card pad">
+        <div class="kicker">Scorecard</div>
+        <h2 class="headline" id="recHead"></h2>
+        <p class="dek">Before round 1, the model published a prediction for every game of the season. Four rounds in, it is picking winners at the rate its 15-season backtest promised. Where it has missed is scoring: the league is playing faster this year, and the in-season update has already closed most of that gap.</p>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Predicted vs actual margin</h3><p>Every 2026-27 game so far against the pre-season forecast. Filled dots: winner called correctly.</p></div></div>
+          <div id="scatter"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>The 15-season replay</h3><p>Each past season predicted using only the seasons before it.</p></div></div>
+          <table id="backtest"></table>
+          <p class="note">Close to the betting market, not ahead of it: on 4,288 games with closing odds, the market's favourite won 72.1% of the time and the in-season model's pick 70.9%.</p>
+          <details><summary>Where the betting market numbers come from</summary><div class="dl">
+            <p><b>Source:</b> BetExplorer (betexplorer.com), which publishes the average closing odds across bookmakers for every ACB game. "Closing" means the last price before tip-off, after the injury news and late money are in. No single bookmaker is used.</p>
+            <p><b>Coverage:</b> regular-season games from 2011-12 to 2025-26. Each game was matched to our database by season and clubs and kept only if BetExplorer's final score agreed exactly with the official ACB box score: 4,288 games.</p>
+            <p><b>Turning odds into a probability:</b> decimal odds of 1.50 imply a 1 / 1.50 = 67% chance. The two sides of a game add up to about 105% because of the bookmakers' margin, so both are scaled down to add to 100%. That is the market's win probability, and the market's pick is whichever side it favours.</p>
+            <p><b>The comparison:</b> on exactly the same games, the model's in-season prediction (made using only games before that date) and the market's closing probability are scored against the result, by share of winners picked and by log loss.</p>
+          </div></details>
+        </div>
+      </div>
+    </div>
+    <aside class="card numbers"><h4>By the numbers</h4><dl id="recNums"></dl></aside>
+  </div>
+</section>
+
+<section id="referees">
+  <div class="sec-head"><h2>Referees</h2><span id="refSpan"></span></div>
+  <div class="story">
+    <div class="stack">
+      <div class="card pad">
+        <div class="kicker">Investigation</div>
+        <h2 class="headline">The home whistle is real, and it vanished when the fans did</h2>
+        <p class="dek">Over 25 seasons, away teams are called for more fouls and home teams shoot more free throws. Crowd size makes no difference, but during the pandemic, when the 2020-21 season was played without fans, the edge disappeared. A handful of referees also call noticeably more or fewer fouls than their peers.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h3>The home whistle, season by season</h3><p>Away team's fouls minus the home team's, per game, with 95% intervals. Above zero favours the home side.</p></div>
+          <div class="chips" role="group" aria-label="Measure"><button class="chip" aria-pressed="true" data-ha="f">Fouls</button><button class="chip" aria-pressed="false" data-ha="t">Free throws</button></div></div>
+        <div id="haChart"></div>
+      </div>
+    </div>
+    <aside class="card numbers"><h4>By the numbers</h4><dl id="refNums"></dl></aside>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-head"><div><h3>Referee by referee</h3><p id="refChartNote"></p></div>
+      <div style="display:grid;gap:8px;justify-items:end">
+        <div class="chips" role="group" aria-label="Referee measure"><button class="chip" aria-pressed="true" data-rm="fouls">Fouls</button><button class="chip" aria-pressed="false" data-rm="fta">Free throws</button><button class="chip" aria-pressed="false" data-rm="away_bias">Home lean</button></div>
+        <label class="inline" for="minGames">Minimum games <select id="minGames"><option value="100" selected>100</option><option value="200">200</option><option value="400">400</option></select></label>
+      </div></div>
+    <div class="legend" id="refLegend"></div>
+    <div class="scroll" id="refChart"></div>
+    <details><summary>How the referee effects are measured</summary><div class="dl">
+      <p>Each game's fouls per 100 possessions is modelled with the season, playoffs and overtime, both clubs' level that season (home and away separately), and an indicator for each of the three referees. Referee effects are shrunk toward the average referee (ridge regression, penalty chosen by 5-fold cross-validation), with 90% bootstrap intervals.</p>
+      <p>Clubs and season explain R² 0.36 of the game-to-game variation in fouls; adding the referees takes it to 0.385. Small, but real: F(83, 6906) = 3.36, p &lt; 0.001, and 500 shuffles of the crews never produced differences this large (permutation p = 0.002). Colored referees differ from the average after correcting for testing all of them (Benjamini-Hochberg, q &lt; 0.10).</p>
+      <p>An effect is relative to the average referee, so it says nothing about fairness. A lean every referee shares is invisible here; the season chart above measures that instead.</p>
+    </div></details>
+  </div>
+</section>
+
+<section id="attendance">
+  <div class="sec-head"><h2>Attendance</h2><span>Pre-season attendance forecast vs the turnstiles</span></div>
+  <div class="story">
+    <div class="stack">
+      <div class="card pad">
+        <div class="kicker">Attendance</div>
+        <h2 class="headline">Big arenas, empty seats: where the crowd forecast went wrong</h2>
+        <p class="dek" id="crowdDek"></p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h3>Forecast vs attendance so far</h3><p>Average per home game. Ring: forecast. Dot: real crowd. Bar: arena capacity.</p></div>
+          <div class="legend"><span><i style="background:transparent;border:2px solid var(--muted);border-radius:50%"></i>forecast</span><span><i style="background:var(--accent);border-radius:50%"></i>actual</span><span><i style="background:var(--track)"></i>capacity</span></div></div>
+        <div class="scroll" id="attChart"></div>
+      </div>
+    </div>
+    <aside class="card numbers"><h4>By the numbers</h4><dl id="attNums"></dl></aside>
+  </div>
+</section>
+
+<section id="shots">
+  <div class="sec-head"><h2>Shooting</h2><span>Where every player takes his shots</span></div>
+  <div class="card pad" style="margin-bottom:16px">
+    <div class="kicker">Shot profiles</div>
+    <h2 class="headline">Shooters travel. Inside scoring doesn't.</h2>
+    <p class="dek">A player's share of threes barely moves when he changes club. How he gets his twos, at the rim or in the paint and mid-range, depends on the new team's system. That is the part only film can fill in.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-head"><div><h3>How well last season predicts this one</h3><p>For every player with 150+ shots in 2023-24, 2024-25 or 2025-26, we used his shot mix from the season before to predict it. We scored those predictions with R² (R-squared): the share of the differences between players' shot mixes that the prediction explains. 100% would be perfect, but about 95% is the realistic ceiling, because where a player's shots come from always has some luck in it.</p></div>
+        <div class="legend"><span><i style="background:var(--ink2)"></i>player stayed with the same team</span><span><i style="background:var(--brand)"></i>player moved to a new team</span></div></div>
+      <div id="stabChart"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div><h3>2026-27 profiles</h3><p id="shotNote"></p></div>
+        <label class="inline" for="clubSel">Club <select id="clubSel"></select></label></div>
+      <div class="legend" style="margin-bottom:6px"><span><i style="background:var(--c3)"></i>rim</span><span><i style="background:var(--c2)"></i>other 2s</span><span><i style="background:var(--accent)"></i>threes</span><span><i style="background:repeating-linear-gradient(135deg,var(--neutral) 0 3px,transparent 3px 6px)"></i>new club: twos uncertain</span></div>
+      <div id="shotList"></div>
+    </div>
+  </div>
+  <div class="card soon" style="margin-top:16px">
+    <div class="date">16<small>NOV</small></div>
+    <div><div class="kicker">Coming next</div><h3 class="headline" style="font-size:28px;margin:2px 0 4px">Player forecasts after round 8</h3>
+    <p class="note" style="margin:0">Next-16-game projections for every player, from a model that predicted assists, three-point attempts and usage with R² above 0.78 on a season it never saw. It needs eight games of this season per player, so it launches once round 8 is in.</p></div>
+  </div>
+</section>
+
+
+
+</main>
+<footer><div class="wrap">
+  <p><b>ACB Model Lab</b> · an independent project, not affiliated with the ACB or any club.</p>
+  <p id="footGen"></p>
+  <p>Data: ACB box scores and match pages, FEB referee assignments, ACB shot charts, BetExplorer average closing odds (2011-12 to 2025-26, benchmark only). Standings and win probabilities: team ratings blended with this season's results, 20,000 simulated seasons. Totals: a season-clock model of league scoring. Attendance: gradient-boosted model of club history, arena capacity and calendar.</p>
+</div></footer>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const D = {"generated":"2026-10-22 23:41 UTC","games_played":36,"through_round":4,"last_date":"2026-10-18","standings":[{"club":"Real Madrid","gp":4,"w":4,"l":0,"exp":25.8,"p10":22,"p90":30,"top4":0.847,"top8":0.98,"bot2":0.0,"pre":23.6},{"club":"Valencia Basket","gp":4,"w":2,"l":2,"exp":24.1,"p10":20,"p90":28,"top4":0.763,"top8":0.962,"bot2":0.0,"pre":24.5},{"club":"Kosner Baskonia","gp":4,"w":3,"l":1,"exp":23.9,"p10":19,"p90":28,"top4":0.698,"top8":0.945,"bot2":0.0,"pre":22.5},{"club":"La Laguna Tenerife","gp":4,"w":3,"l":1,"exp":20.7,"p10":16,"p90":25,"top4":0.345,"top8":0.761,"bot2":0.003,"pre":20.2},{"club":"Bar\u00e7a","gp":4,"w":2,"l":2,"exp":20.5,"p10":16,"p90":25,"top4":0.368,"top8":0.777,"bot2":0.003,"pre":22.0},{"club":"Asisa Joventut","gp":4,"w":2,"l":2,"exp":20.2,"p10":15,"p90":25,"top4":0.334,"top8":0.75,"bot2":0.004,"pre":19.9},{"club":"UCAM Murcia","gp":4,"w":1,"l":3,"exp":18.4,"p10":14,"p90":23,"top4":0.198,"top8":0.608,"bot2":0.012,"pre":21.1},{"club":"Unicaja","gp":4,"w":2,"l":2,"exp":17.9,"p10":13,"p90":23,"top4":0.146,"top8":0.517,"bot2":0.017,"pre":17.3},{"club":"R\u00edo Breog\u00e1n","gp":4,"w":3,"l":1,"exp":17.7,"p10":13,"p90":22,"top4":0.115,"top8":0.453,"bot2":0.021,"pre":16.1},{"club":"Monbus Obradoiro","gp":4,"w":3,"l":1,"exp":15.9,"p10":11,"p90":21,"top4":0.048,"top8":0.278,"bot2":0.055,"pre":14.9},{"club":"Surne Bilbao","gp":4,"w":2,"l":2,"exp":15.4,"p10":11,"p90":20,"top4":0.049,"top8":0.273,"bot2":0.064,"pre":15.9},{"club":"Casademont Zaragoza","gp":4,"w":3,"l":1,"exp":15.3,"p10":11,"p90":20,"top4":0.034,"top8":0.225,"bot2":0.074,"pre":13.5},{"club":"Recoletas Salud SPB","gp":4,"w":1,"l":3,"exp":14.0,"p10":9,"p90":19,"top4":0.026,"top8":0.183,"bot2":0.105,"pre":13.7},{"club":"FIATC Girona","gp":4,"w":2,"l":2,"exp":13.6,"p10":9,"p90":18,"top4":0.016,"top8":0.132,"bot2":0.154,"pre":14.7},{"club":"MoraBanc Andorra","gp":4,"w":1,"l":3,"exp":11.7,"p10":7,"p90":16,"top4":0.005,"top8":0.06,"bot2":0.272,"pre":11.9},{"club":"iLERNA Lleida","gp":4,"w":1,"l":3,"exp":11.4,"p10":7,"p90":16,"top4":0.005,"top8":0.052,"bot2":0.295,"pre":11.1},{"club":"Kids&Us Manresa","gp":4,"w":0,"l":4,"exp":9.8,"p10":5,"p90":14,"top4":0.001,"top8":0.022,"bot2":0.442,"pre":11.9},{"club":"Leyma Coru\u00f1a","gp":4,"w":1,"l":3,"exp":9.8,"p10":6,"p90":14,"top4":0.001,"top8":0.02,"bot2":0.478,"pre":11.1}],"next_round":5,"next_games":[{"date":"2026-10-24","home":"Kids&Us Manresa","away":"Recoletas Salud SPB","ph":0.489,"sh":93,"sa":94,"total":185.9,"tl":186.5,"lo":166.0,"hi":208.7,"spread":0.5},{"date":"2026-10-24","home":"FIATC Girona","away":"Asisa Joventut","ph":0.381,"sh":90,"sa":94,"total":183.5,"tl":184.5,"lo":163.6,"hi":206.3,"spread":3.5},{"date":"2026-10-24","home":"UCAM Murcia","away":"Leyma Coru\u00f1a","ph":0.863,"sh":100,"sa":86,"total":186.1,"tl":186.5,"lo":166.2,"hi":208.9,"spread":-13.5},{"date":"2026-10-25","home":"Bar\u00e7a","away":"Casademont Zaragoza","ph":0.813,"sh":98,"sa":87,"total":185.8,"tl":186.5,"lo":165.9,"hi":208.6,"spread":-11.5},{"date":"2026-10-25","home":"Surne Bilbao","away":"MoraBanc Andorra","ph":0.734,"sh":97,"sa":89,"total":186.1,"tl":186.5,"lo":166.3,"hi":209.0,"spread":-7.5},{"date":"2026-10-25","home":"La Laguna Tenerife","away":"Monbus Obradoiro","ph":0.775,"sh":96,"sa":86,"total":182.0,"tl":182.5,"lo":162.1,"hi":204.8,"spread":-9.5},{"date":"2026-10-25","home":"Valencia Basket","away":"Kosner Baskonia","ph":0.681,"sh":96,"sa":90,"total":186.2,"tl":186.5,"lo":166.4,"hi":209.0,"spread":-5.5},{"date":"2026-10-25","home":"R\u00edo Breog\u00e1n","away":"Unicaja","ph":0.596,"sh":95,"sa":92,"total":186.5,"tl":187.5,"lo":166.6,"hi":209.3,"spread":-2.5},{"date":"2026-10-25","home":"iLERNA Lleida","away":"Real Madrid","ph":0.193,"sh":88,"sa":99,"total":187.6,"tl":188.5,"lo":167.7,"hi":210.4,"spread":10.5}],"scorecard":{"n":36,"right":24,"mae_margin":10.77491388888889,"mae_total":18.510019444444445,"bias_total":12.951186111111115,"logloss":0.6276555555555556,"in80_margin":0.7777777777777778,"in80_total":0.6111111111111112},"sc_rows":[{"r":1,"home":"Surne Bilbao","away":"Kids&Us Manresa","hs":107,"as_":92,"pm":6.6,"am":15,"pt":175.3,"at":199,"p":0.706,"ok":1},{"r":1,"home":"MoraBanc Andorra","away":"Monbus Obradoiro","hs":85,"as_":90,"pm":2.7,"am":-5,"pt":172.2,"at":175,"p":0.589,"ok":0},{"r":1,"home":"Bar\u00e7a","away":"Leyma Coru\u00f1a","hs":119,"as_":101,"pm":15.2,"am":18,"pt":176.5,"at":220,"p":0.881,"ok":1},{"r":1,"home":"R\u00edo Breog\u00e1n","away":"Asisa Joventut","hs":110,"as_":104,"pm":-1.3,"am":6,"pt":176.6,"at":214,"p":0.459,"ok":0},{"r":1,"home":"Recoletas Salud SPB","away":"Kosner Baskonia","hs":97,"as_":98,"pm":-4.0,"am":-1,"pt":170.7,"at":195,"p":0.371,"ok":1},{"r":1,"home":"La Laguna Tenerife","away":"Casademont Zaragoza","hs":80,"as_":81,"pm":11.6,"am":-1,"pt":168.3,"at":161,"p":0.823,"ok":0},{"r":1,"home":"FIATC Girona","away":"UCAM Murcia","hs":84,"as_":77,"pm":-4.4,"am":7,"pt":173.5,"at":161,"p":0.358,"ok":0},{"r":1,"home":"Valencia Basket","away":"iLERNA Lleida","hs":100,"as_":105,"pm":19.3,"am":-5,"pt":174.9,"at":205,"p":0.927,"ok":0},{"r":1,"home":"Real Madrid","away":"Unicaja","hs":89,"as_":87,"pm":9.7,"am":2,"pt":172.4,"at":176,"p":0.781,"ok":1},{"r":2,"home":"Asisa Joventut","away":"MoraBanc Andorra","hs":96,"as_":75,"pm":12.1,"am":21,"pt":173.2,"at":171,"p":0.831,"ok":1},{"r":2,"home":"Unicaja","away":"La Laguna Tenerife","hs":75,"as_":80,"pm":2.1,"am":-5,"pt":166.6,"at":155,"p":0.57,"ok":0},{"r":2,"home":"Kids&Us Manresa","away":"R\u00edo Breog\u00e1n","hs":95,"as_":101,"pm":2.3,"am":-6,"pt":176.7,"at":196,"p":0.575,"ok":0},{"r":2,"home":"iLERNA Lleida","away":"Recoletas Salud SPB","hs":81,"as_":94,"pm":0.7,"am":-13,"pt":172.7,"at":175,"p":0.522,"ok":0},{"r":2,"home":"Leyma Coru\u00f1a","away":"Surne Bilbao","hs":104,"as_":101,"pm":-0.5,"am":3,"pt":176.6,"at":205,"p":0.482,"ok":0},{"r":2,"home":"Monbus Obradoiro","away":"Real Madrid","hs":107,"as_":114,"pm":-5.5,"am":-7,"pt":174.9,"at":221,"p":0.325,"ok":1},{"r":2,"home":"Casademont Zaragoza","away":"Valencia Basket","hs":82,"as_":97,"pm":-10.6,"am":-15,"pt":173.0,"at":179,"p":0.198,"ok":1},{"r":2,"home":"Kosner Baskonia","away":"FIATC Girona","hs":118,"as_":78,"pm":12.2,"am":40,"pt":173.1,"at":196,"p":0.834,"ok":1},{"r":2,"home":"UCAM Murcia","away":"Bar\u00e7a","hs":100,"as_":94,"pm":4.2,"am":6,"pt":174.6,"at":194,"p":0.634,"ok":1},{"r":3,"home":"Leyma Coru\u00f1a","away":"Casademont Zaragoza","hs":71,"as_":92,"pm":3.7,"am":-21,"pt":173.8,"at":163,"p":0.619,"ok":0},{"r":3,"home":"Unicaja","away":"MoraBanc Andorra","hs":92,"as_":84,"pm":9.2,"am":8,"pt":170.1,"at":176,"p":0.772,"ok":1},{"r":3,"home":"R\u00edo Breog\u00e1n","away":"FIATC Girona","hs":115,"as_":92,"pm":4.8,"am":23,"pt":177.2,"at":207,"p":0.654,"ok":1},{"r":3,"home":"Monbus Obradoiro","away":"iLERNA Lleida","hs":91,"as_":89,"pm":6.5,"am":2,"pt":173.7,"at":180,"p":0.701,"ok":1},{"r":3,"home":"Real Madrid","away":"Kids&Us Manresa","hs":120,"as_":83,"pm":13.8,"am":37,"pt":176.0,"at":203,"p":0.86,"ok":1},{"r":3,"home":"UCAM Murcia","away":"La Laguna Tenerife","hs":77,"as_":90,"pm":7.3,"am":-13,"pt":169.3,"at":167,"p":0.725,"ok":0},{"r":3,"home":"Kosner Baskonia","away":"Asisa Joventut","hs":93,"as_":73,"pm":6.1,"am":20,"pt":172.8,"at":166,"p":0.692,"ok":1},{"r":3,"home":"Surne Bilbao","away":"Recoletas Salud SPB","hs":96,"as_":87,"pm":5.5,"am":9,"pt":173.7,"at":183,"p":0.675,"ok":1},{"r":3,"home":"Bar\u00e7a","away":"Valencia Basket","hs":89,"as_":86,"pm":0.2,"am":3,"pt":176.1,"at":175,"p":0.506,"ok":1},{"r":4,"home":"Kids&Us Manresa","away":"Unicaja","hs":72,"as_":84,"pm":-0.1,"am":-12,"pt":171.0,"at":156,"p":0.496,"ok":1},{"r":4,"home":"MoraBanc Andorra","away":"R\u00edo Breog\u00e1n","hs":108,"as_":102,"pm":1.2,"am":6,"pt":176.2,"at":210,"p":0.539,"ok":1},{"r":4,"home":"Recoletas Salud SPB","away":"Monbus Obradoiro","hs":72,"as_":79,"pm":4.9,"am":-7,"pt":171.5,"at":151,"p":0.656,"ok":0},{"r":4,"home":"FIATC Girona","away":"Leyma Coru\u00f1a","hs":110,"as_":90,"pm":6.9,"am":20,"pt":176.0,"at":200,"p":0.712,"ok":1},{"r":4,"home":"Casademont Zaragoza","away":"iLERNA Lleida","hs":109,"as_":98,"pm":4.7,"am":11,"pt":173.2,"at":207,"p":0.649,"ok":1},{"r":4,"home":"Real Madrid","away":"Surne Bilbao","hs":119,"as_":84,"pm":11.2,"am":35,"pt":177.5,"at":203,"p":0.813,"ok":1},{"r":4,"home":"Valencia Basket","away":"UCAM Murcia","hs":116,"as_":93,"pm":7.7,"am":23,"pt":174.0,"at":209,"p":0.734,"ok":1},{"r":4,"home":"La Laguna Tenerife","away":"Kosner Baskonia","hs":82,"as_":77,"pm":0.9,"am":5,"pt":168.9,"at":159,"p":0.531,"ok":1},{"r":4,"home":"Asisa Joventut","away":"Bar\u00e7a","hs":113,"as_":89,"pm":1.8,"am":24,"pt":175.7,"at":202,"p":0.559,"ok":1}],"refs":[{"name":"Oscar Perea Lorente","games":765,"first":2002,"last":2026,"g":"M","fouls":[1.28,0.89,1.62,1],"fta":[2.01,1.31,2.69,1],"away_bias":[-0.47,-0.75,-0.19,1]},{"name":"Eduardo Sancha Bech","games":120,"first":2002,"last":2005,"g":"M","fouls":[1.07,0.53,1.57,1],"fta":[0.31,-0.64,1.36,0],"away_bias":[0.31,-0.07,0.71,0]},{"name":"Lluis Guirao Cano","games":417,"first":2002,"last":2016,"g":"M","fouls":[1.04,0.54,1.47,1],"fta":[1.93,1.01,2.6,1],"away_bias":[0.82,0.53,1.18,1]},{"name":"Antonio Rafael Conde Ruiz","games":804,"first":2002,"last":2026,"g":"M","fouls":[0.86,0.51,1.21,1],"fta":[0.84,0.18,1.58,1],"away_bias":[-0.48,-0.79,-0.21,1]},{"name":"Benjam\u00edn Jim\u00e9nez Trujillo","games":571,"first":2005,"last":2026,"g":"M","fouls":[0.79,0.38,1.08,1],"fta":[0.64,0.02,1.37,0],"away_bias":[-0.41,-0.75,-0.07,0]},{"name":"Esperanza M\u00aa Mendoza Holgado","games":182,"first":2018,"last":2026,"g":"F","fouls":[0.62,0.07,1.11,0],"fta":[0.65,-0.23,1.33,0],"away_bias":[0.61,0.24,0.98,0]},{"name":"Joaqu\u00edn Garc\u00eda Gonz\u00e1lez","games":165,"first":2020,"last":2026,"g":"M","fouls":[0.6,0.05,1.05,0],"fta":[1.74,0.75,2.41,1],"away_bias":[0.07,-0.29,0.53,0]},{"name":"Jos\u00e9 Ram\u00f3n Garc\u00eda Ortiz","games":529,"first":2002,"last":2020,"g":"M","fouls":[0.59,0.19,0.96,1],"fta":[0.6,-0.26,1.42,0],"away_bias":[0.37,0.04,0.69,0]},{"name":"Mateo Ramos De La Nava","games":132,"first":2002,"last":2005,"g":"M","fouls":[0.58,0.04,1.07,0],"fta":[1.29,0.22,2.3,0],"away_bias":[0.3,-0.14,0.78,0]},{"name":"Alfonso Olivares Iglesias","games":234,"first":2018,"last":2026,"g":"M","fouls":[0.58,0.17,1.05,0],"fta":[0.7,-0.29,1.45,0],"away_bias":[0.32,-0.04,0.62,0]},{"name":"Fernando Calatrava Cuevas","games":510,"first":2011,"last":2026,"g":"M","fouls":[0.57,0.17,0.93,1],"fta":[0.84,0.12,1.4,0],"away_bias":[-0.18,-0.52,0.14,0]},{"name":"Andr\u00e9s Fernandez Sanchez","games":139,"first":2013,"last":2018,"g":"M","fouls":[0.48,-0.01,1.01,0],"fta":[0.92,-0.1,2.03,0],"away_bias":[0.22,-0.16,0.53,0]},{"name":"Crist\u00f3bal S\u00e1nchez Cutillas","games":155,"first":2020,"last":2026,"g":"M","fouls":[0.44,0.01,0.88,0],"fta":[0.96,0.09,1.66,0],"away_bias":[0.57,0.13,0.92,1]},{"name":"Carlos Merino Campos","games":171,"first":2019,"last":2026,"g":"M","fouls":[0.4,-0.16,0.77,0],"fta":[1.1,0.21,1.92,0],"away_bias":[0.44,0.04,0.75,0]},{"name":"Jos\u00e9 Antonio Mart\u00edn Bertran","games":603,"first":2002,"last":2020,"g":"M","fouls":[0.4,0.04,0.86,0],"fta":[-0.13,-0.8,0.65,0],"away_bias":[-0.14,-0.47,0.17,0]},{"name":"Alberto S\u00e1nchez Sixto","games":233,"first":2018,"last":2026,"g":"M","fouls":[0.33,-0.12,0.72,0],"fta":[0.62,-0.21,1.51,0],"away_bias":[0.23,-0.15,0.61,0]},{"name":"Javier Torres S\u00e1nchez","games":241,"first":2018,"last":2026,"g":"M","fouls":[0.32,-0.12,0.76,0],"fta":[0.02,-0.69,0.88,0],"away_bias":[0.11,-0.26,0.42,0]},{"name":"Mart\u00edn Caballero Madrid","games":322,"first":2015,"last":2026,"g":"M","fouls":[0.31,-0.12,0.74,0],"fta":[0.38,-0.44,0.95,0],"away_bias":[0.21,-0.12,0.58,0]},{"name":"Arnau Padr\u00f3s Feliu","games":229,"first":2018,"last":2026,"g":"M","fouls":[0.23,-0.16,0.61,0],"fta":[0.75,-0.15,1.49,0],"away_bias":[-0.04,-0.47,0.33,0]},{"name":"Francisco Ara\u00f1a Santana","games":676,"first":2002,"last":2026,"g":"M","fouls":[0.23,-0.12,0.58,0],"fta":[-0.2,-0.89,0.53,0],"away_bias":[-0.32,-0.54,0.01,0]},{"name":"Pedro Munar Ba\u00f1on","games":256,"first":2007,"last":2018,"g":"M","fouls":[0.21,-0.39,0.67,0],"fta":[0.32,-0.57,1.1,0],"away_bias":[-0.05,-0.43,0.32,0]},{"name":"Miguel Angel Perez Perez","games":716,"first":2002,"last":2024,"g":"M","fouls":[0.21,-0.17,0.58,0],"fta":[0.18,-0.48,0.86,0],"away_bias":[-0.28,-0.58,-0.02,0]},{"name":"Antonio Gallo Mart\u00ednez","games":97,"first":2002,"last":2005,"g":"M","fouls":[0.19,-0.31,0.67,0],"fta":[0.5,-0.35,1.46,0],"away_bias":[-0.63,-1.03,-0.19,0]},{"name":"Juan Luis Redondo S\u00e1nchez","games":422,"first":2002,"last":2015,"g":"M","fouls":[0.17,-0.33,0.69,0],"fta":[-0.17,-1.02,0.57,0],"away_bias":[-0.37,-0.73,0.01,0]},{"name":"Juan Carlos Mitjana Lechuga","games":329,"first":2002,"last":2012,"g":"M","fouls":[0.16,-0.32,0.69,0],"fta":[-0.19,-0.95,0.88,0],"away_bias":[-0.25,-0.63,0.16,0]},{"name":"Anna Card\u00fas Flaqu\u00e9","games":295,"first":2003,"last":2017,"g":"F","fouls":[0.14,-0.34,0.58,0],"fta":[0.5,-0.37,1.35,0],"away_bias":[0.13,-0.22,0.48,0]},{"name":"Juan Carlos Garc\u00eda Gonz\u00e1lez","games":703,"first":2002,"last":2025,"g":"M","fouls":[0.13,-0.21,0.53,0],"fta":[-0.02,-0.68,0.59,0],"away_bias":[-0.22,-0.5,0.07,0]},{"name":"Jordi Aliaga Sol\u00e9","games":370,"first":2014,"last":2026,"g":"M","fouls":[0.13,-0.33,0.63,0],"fta":[0.45,-0.44,1.22,0],"away_bias":[-0.02,-0.33,0.38,0]},{"name":"Carlos Javier Garcia Leon","games":144,"first":2003,"last":2010,"g":"M","fouls":[0.1,-0.47,0.69,0],"fta":[-0.28,-1.15,0.75,0],"away_bias":[0.0,-0.4,0.43,0]},{"name":"David Planells Caicedo","games":85,"first":2013,"last":2016,"g":"M","fouls":[0.04,-0.49,0.51,0],"fta":[-0.68,-1.54,0.31,0],"away_bias":[-0.17,-0.61,0.21,0]},{"name":"Jes\u00fas Alberto Prieto Rodriguez","games":60,"first":2002,"last":2005,"g":"M","fouls":[0.04,-0.52,0.61,0],"fta":[-0.29,-1.05,0.65,0],"away_bias":[-0.01,-0.41,0.42,0]},{"name":"Daniel Hierrezuelo Navas","games":731,"first":2002,"last":2023,"g":"M","fouls":[0.03,-0.32,0.4,0],"fta":[0.3,-0.39,0.99,0],"away_bias":[0.22,-0.1,0.51,0]},{"name":"Fabio Fern\u00e1ndez Esteban","games":140,"first":2021,"last":2026,"g":"M","fouls":[0.03,-0.41,0.49,0],"fta":[-0.41,-1.61,0.53,0],"away_bias":[-0.17,-0.56,0.24,0]},{"name":"Jorge Mart\u00ednez Fern\u00e1ndez","games":427,"first":2011,"last":2026,"g":"M","fouls":[0.01,-0.41,0.47,0],"fta":[-0.28,-0.85,0.43,0],"away_bias":[0.01,-0.28,0.33,0]},{"name":"Andr\u00e9s Fern\u00e1ndez Carretero","games":141,"first":2021,"last":2026,"g":"M","fouls":[-0.04,-0.51,0.43,0],"fta":[0.19,-0.66,1.17,0],"away_bias":[0.31,-0.03,0.7,0]},{"name":"Carlos S\u00e1nchez Monserrat","games":346,"first":2002,"last":2018,"g":"M","fouls":[-0.04,-0.49,0.47,0],"fta":[-0.15,-1.02,0.63,0],"away_bias":[-0.03,-0.39,0.34,0]},{"name":"Juan Jos\u00e9 Martinez Diez","games":335,"first":2002,"last":2017,"g":"M","fouls":[-0.11,-0.59,0.39,0],"fta":[-0.05,-0.86,0.87,0],"away_bias":[-0.36,-0.66,0.06,0]},{"name":"Rafael Serrano Vel\u00e1zquez","games":353,"first":2014,"last":2026,"g":"M","fouls":[-0.12,-0.53,0.34,0],"fta":[-0.25,-1.0,0.54,0],"away_bias":[0.16,-0.17,0.55,0]},{"name":"Jorge Mu\u00f1oz Garc\u00eda","games":50,"first":2008,"last":2010,"g":"M","fouls":[-0.13,-0.57,0.4,0],"fta":[0.15,-0.8,1.0,0],"away_bias":[0.3,-0.16,0.73,0]},{"name":"Luis Miguel Castillo Larroca","games":517,"first":2008,"last":2026,"g":"M","fouls":[-0.14,-0.55,0.27,0],"fta":[0.33,-0.36,1.02,0],"away_bias":[-0.23,-0.53,0.09,0]},{"name":"Jacobo Rial Barreiro","games":283,"first":2010,"last":2021,"g":"M","fouls":[-0.14,-0.64,0.39,0],"fta":[-0.24,-1.1,0.57,0],"away_bias":[0.28,-0.09,0.6,0]},{"name":"David S\u00e1nchez Benito","games":146,"first":2020,"last":2026,"g":"M","fouls":[-0.14,-0.59,0.31,0],"fta":[-0.05,-0.97,0.82,0],"away_bias":[-0.08,-0.42,0.26,0]},{"name":"Vicente Mart\u00ednez Silla","games":158,"first":2020,"last":2026,"g":"M","fouls":[-0.15,-0.58,0.31,0],"fta":[0.02,-1.02,0.9,0],"away_bias":[-0.3,-0.66,0.05,0]},{"name":"Yasmina Alcaraz Moreno","games":121,"first":2020,"last":2026,"g":"F","fouls":[-0.16,-0.55,0.27,0],"fta":[-0.27,-1.15,0.73,0],"away_bias":[0.55,0.1,0.92,0]},{"name":"Alberto Baena Arroyo","games":182,"first":2019,"last":2026,"g":"M","fouls":[-0.18,-0.6,0.22,0],"fta":[-0.32,-1.18,0.61,0],"away_bias":[-0.09,-0.48,0.22,0]},{"name":"Carlos Cort\u00e9s Rey","games":621,"first":2006,"last":2026,"g":"M","fouls":[-0.19,-0.58,0.21,0],"fta":[-0.1,-0.78,0.58,0],"away_bias":[-0.32,-0.58,0.01,0]},{"name":"Sergio Manuel Rodr\u00edguez","games":382,"first":2013,"last":2026,"g":"M","fouls":[-0.2,-0.71,0.19,0],"fta":[-0.21,-0.94,0.5,0],"away_bias":[0.22,-0.1,0.56,0]},{"name":"Miguel Angel Perez Niz","games":303,"first":2004,"last":2017,"g":"M","fouls":[-0.31,-0.75,0.12,0],"fta":[-1.04,-1.76,-0.17,0],"away_bias":[0.55,0.15,0.94,1]},{"name":"Roberto Lucas Mart\u00ednez","games":149,"first":2020,"last":2026,"g":"M","fouls":[-0.31,-0.77,0.18,0],"fta":[-1.11,-1.77,-0.3,1],"away_bias":[0.3,-0.11,0.66,0]},{"name":"Alfredo Ortega Morejon","games":125,"first":2002,"last":2007,"g":"M","fouls":[-0.31,-0.89,0.16,0],"fta":[0.25,-0.93,1.0,0],"away_bias":[0.49,0.0,0.97,0]},{"name":"Jos\u00e9 Mar\u00eda Rosado Gonz\u00e1lez","games":131,"first":2002,"last":2007,"g":"M","fouls":[-0.32,-0.85,0.29,0],"fta":[-0.31,-1.28,0.68,0],"away_bias":[0.82,0.34,1.28,1]},{"name":"V\u00edctor Mas Cagide","games":62,"first":2015,"last":2018,"g":"M","fouls":[-0.34,-0.82,0.24,0],"fta":[-0.59,-1.22,0.3,0],"away_bias":[-0.46,-0.84,-0.1,0]},{"name":"David Soto Latorre","games":157,"first":2007,"last":2014,"g":"M","fouls":[-0.38,-0.85,0.19,0],"fta":[0.2,-0.81,1.15,0],"away_bias":[0.23,-0.18,0.62,0]},{"name":"Emilio P\u00e9rez Pizarro","games":787,"first":2002,"last":2026,"g":"M","fouls":[-0.43,-0.81,-0.04,0],"fta":[-0.15,-0.82,0.56,0],"away_bias":[0.08,-0.17,0.35,0]},{"name":"Guillermo R\u00edos Marcos","games":68,"first":2024,"last":2026,"g":"M","fouls":[-0.43,-0.93,0.02,0],"fta":[-0.65,-1.45,0.1,0],"away_bias":[-0.11,-0.39,0.23,0]},{"name":"Xavier Amoros Porrini","games":336,"first":2002,"last":2012,"g":"M","fouls":[-0.44,-0.88,0.17,0],"fta":[-0.73,-1.42,0.28,0],"away_bias":[0.34,-0.1,0.79,0]},{"name":"Vicente Bult\u00f3 Estebanez","games":615,"first":2002,"last":2023,"g":"M","fouls":[-0.45,-0.84,-0.08,0],"fta":[-0.3,-1.0,0.41,0],"away_bias":[0.26,-0.02,0.55,0]},{"name":"Iy\u00e1n Gonz\u00e1lez G\u00e1lvez","games":183,"first":2019,"last":2026,"g":"M","fouls":[-0.53,-0.96,-0.06,0],"fta":[-1.3,-2.14,-0.44,0],"away_bias":[-0.03,-0.4,0.35,0]},{"name":"Jos\u00e9 Miguel Garcia Leal","games":169,"first":2002,"last":2010,"g":"M","fouls":[-0.54,-1.0,0.06,0],"fta":[-0.63,-1.63,0.44,0],"away_bias":[-0.42,-0.8,0.14,0]},{"name":"Santiago Fernandez Gimenez","games":199,"first":2002,"last":2010,"g":"M","fouls":[-0.54,-1.15,0.07,0],"fta":[-0.54,-1.4,0.58,0],"away_bias":[0.66,0.24,1.07,1]},{"name":"Rub\u00e9n S\u00e1nchez Mohedas","games":390,"first":2010,"last":2026,"g":"M","fouls":[-0.57,-0.92,-0.13,0],"fta":[-0.24,-1.02,0.57,0],"away_bias":[0.34,-0.04,0.7,0]},{"name":"Antonio Sacristan Barazon","games":324,"first":2004,"last":2018,"g":"M","fouls":[-0.58,-1.06,-0.12,0],"fta":[-1.3,-2.11,-0.32,1],"away_bias":[0.45,0.04,0.79,0]},{"name":"Juan de Dios Oy\u00f3n Cauqui","games":365,"first":2013,"last":2026,"g":"M","fouls":[-0.63,-1.05,-0.19,1],"fta":[-0.15,-0.87,0.58,0],"away_bias":[-0.44,-0.81,-0.08,0]},{"name":"Juan Antonio Requena Maltrana","games":174,"first":2002,"last":2007,"g":"M","fouls":[-0.73,-1.25,-0.19,0],"fta":[-0.78,-1.62,0.12,0],"away_bias":[0.5,-0.03,0.91,0]},{"name":"Ra\u00fal Zamorano S\u00e1nchez","games":246,"first":2016,"last":2026,"g":"M","fouls":[-0.76,-1.16,-0.3,1],"fta":[-1.61,-2.41,-0.74,1],"away_bias":[-0.22,-0.51,0.13,0]},{"name":"Carlos F. Peruga Embid","games":718,"first":2002,"last":2026,"g":"M","fouls":[-0.81,-1.2,-0.46,1],"fta":[-1.03,-1.7,-0.33,1],"away_bias":[0.02,-0.27,0.33,0]},{"name":"Jos\u00e9 M\u00aa Terreros San Miguel","games":66,"first":2003,"last":2006,"g":"M","fouls":[-0.85,-1.25,-0.37,1],"fta":[-0.54,-1.43,0.55,0],"away_bias":[-0.13,-0.57,0.27,0]},{"name":"Felipe Llamazares Diez","games":176,"first":2002,"last":2008,"g":"M","fouls":[-0.86,-1.28,-0.21,1],"fta":[-1.12,-1.87,-0.18,0],"away_bias":[0.41,-0.08,0.82,0]},{"name":"Manuel Alzuria Huguet","games":189,"first":2002,"last":2008,"g":"M","fouls":[-0.95,-1.51,-0.36,1],"fta":[-2.47,-3.34,-1.45,1],"away_bias":[-0.1,-0.46,0.43,0]},{"name":"Jos\u00e9 Javier Murgui Pe\u00f1a","games":307,"first":2002,"last":2012,"g":"M","fouls":[-0.97,-1.41,-0.51,1],"fta":[-1.3,-2.24,-0.41,1],"away_bias":[0.33,-0.03,0.78,0]},{"name":"Fco. Jos\u00e9 de la Maza Alonso","games":354,"first":2002,"last":2012,"g":"M","fouls":[-1.08,-1.53,-0.66,1],"fta":[-1.22,-1.99,-0.28,0],"away_bias":[-0.92,-1.35,-0.53,1]},{"name":"Juan Carlos Arteaga Vizca\u00edno","games":453,"first":2002,"last":2016,"g":"M","fouls":[-1.32,-1.78,-0.86,1],"fta":[-1.47,-2.28,-0.57,1],"away_bias":[0.21,-0.17,0.52,0]}],"ref_sig":{"fouls":17,"fta":11,"away_bias":9},"ref_n":83,"ref_means":{"fouls":58.49,"fta":54.0,"away_bias":0.84},"ref_games":7864,"home_away":[{"s":2002,"label":"2001-02","n":331,"f":0.341,"lo":-0.175,"hi":0.858,"t":0.782,"tlo":-0.246,"thi":1.811},{"s":2003,"label":"2002-03","n":332,"f":0.669,"lo":0.147,"hi":1.19,"t":0.925,"tlo":-0.09,"thi":1.94},{"s":2004,"label":"2003-04","n":335,"f":0.492,"lo":0.015,"hi":0.971,"t":0.839,"tlo":-0.087,"thi":1.765},{"s":2005,"label":"2004-05","n":336,"f":-0.083,"lo":-0.625,"hi":0.458,"t":-0.431,"tlo":-1.491,"thi":0.628},{"s":2006,"label":"2005-06","n":331,"f":0.323,"lo":-0.158,"hi":0.804,"t":0.187,"tlo":-0.753,"thi":1.128},{"s":2007,"label":"2006-07","n":336,"f":0.655,"lo":0.159,"hi":1.151,"t":1.048,"tlo":0.133,"thi":1.962},{"s":2008,"label":"2007-08","n":323,"f":0.084,"lo":-0.392,"hi":0.559,"t":0.217,"tlo":-0.739,"thi":1.172},{"s":2009,"label":"2008-09","n":291,"f":0.749,"lo":0.291,"hi":1.207,"t":1.258,"tlo":0.313,"thi":2.203},{"s":2010,"label":"2009-10","n":326,"f":0.5,"lo":0.004,"hi":0.997,"t":1.301,"tlo":0.365,"thi":2.237},{"s":2011,"label":"2010-11","n":324,"f":0.343,"lo":-0.108,"hi":0.793,"t":0.765,"tlo":-0.066,"thi":1.597},{"s":2012,"label":"2011-12","n":329,"f":0.726,"lo":0.25,"hi":1.203,"t":0.805,"tlo":-0.12,"thi":1.731},{"s":2013,"label":"2012-13","n":328,"f":0.771,"lo":0.286,"hi":1.256,"t":1.14,"tlo":0.235,"thi":2.045},{"s":2014,"label":"2013-14","n":329,"f":0.511,"lo":0.022,"hi":0.999,"t":0.593,"tlo":-0.31,"thi":1.496},{"s":2015,"label":"2014-15","n":328,"f":1.006,"lo":0.548,"hi":1.464,"t":1.991,"tlo":1.148,"thi":2.834},{"s":2016,"label":"2015-16","n":328,"f":0.677,"lo":0.185,"hi":1.169,"t":0.756,"tlo":-0.283,"thi":1.795},{"s":2017,"label":"2016-17","n":295,"f":0.932,"lo":0.414,"hi":1.45,"t":1.617,"tlo":0.575,"thi":2.659},{"s":2018,"label":"2017-18","n":327,"f":0.78,"lo":0.326,"hi":1.233,"t":1.236,"tlo":0.358,"thi":2.113},{"s":2019,"label":"2018-19","n":325,"f":1.132,"lo":0.663,"hi":1.601,"t":2.212,"tlo":1.299,"thi":3.126},{"s":2020,"label":"2019-20","n":238,"f":0.395,"lo":-0.228,"hi":1.018,"t":0.374,"tlo":-0.792,"thi":1.54},{"s":2021,"label":"2020-21","n":360,"f":0.086,"lo":-0.434,"hi":0.607,"t":-0.178,"tlo":-1.083,"thi":0.727},{"s":2022,"label":"2021-22","n":327,"f":0.697,"lo":0.249,"hi":1.145,"t":1.333,"tlo":0.483,"thi":2.183},{"s":2023,"label":"2022-23","n":325,"f":0.911,"lo":0.443,"hi":1.378,"t":1.375,"tlo":0.416,"thi":2.335},{"s":2024,"label":"2023-24","n":326,"f":0.718,"lo":0.238,"hi":1.198,"t":1.399,"tlo":0.506,"thi":2.291},{"s":2025,"label":"2024-25","n":325,"f":0.852,"lo":0.381,"hi":1.324,"t":1.514,"tlo":0.555,"thi":2.473},{"s":2026,"label":"2025-26","n":327,"f":1.021,"lo":0.564,"hi":1.479,"t":1.474,"tlo":0.567,"thi":2.381}],"att_clubs":[{"club":"Asisa Joventut","cap":12760.0,"fmean":6859,"n":2,"act":7442,"fplayed":7262,"naive":6859},{"club":"Bar\u00e7a","cap":7786.0,"fmean":5313,"n":2,"act":4365,"fplayed":5454,"naive":5204},{"club":"Casademont Zaragoza","cap":10744.0,"fmean":7760,"n":2,"act":6942,"fplayed":8186,"naive":6906},{"club":"FIATC Girona","cap":5500.0,"fmean":5165,"n":2,"act":4472,"fplayed":5130,"naive":4933},{"club":"Kids&Us Manresa","cap":5000.0,"fmean":4715,"n":2,"act":4508,"fplayed":4610,"naive":4785},{"club":"Kosner Baskonia","cap":15504.0,"fmean":8809,"n":2,"act":8156,"fplayed":8812,"naive":8685},{"club":"La Laguna Tenerife","cap":5100.0,"fmean":4571,"n":2,"act":4270,"fplayed":4544,"naive":4818},{"club":"Leyma Coru\u00f1a","cap":9894.0,"fmean":8558,"n":2,"act":6287,"fplayed":8501,"naive":7455},{"club":"Monbus Obradoiro","cap":6383.0,"fmean":5379,"n":2,"act":5590,"fplayed":5444,"naive":5213},{"club":"MoraBanc Andorra","cap":5001.0,"fmean":3444,"n":2,"act":3785,"fplayed":3330,"naive":3471},{"club":"Real Madrid","cap":13109.0,"fmean":8914,"n":3,"act":7286,"fplayed":9159,"naive":7606},{"club":"Recoletas Salud SPB","cap":9604.0,"fmean":9190,"n":2,"act":8956,"fplayed":9185,"naive":9008},{"club":"R\u00edo Breog\u00e1n","cap":5310.0,"fmean":4959,"n":2,"act":5272,"fplayed":4756,"naive":5263},{"club":"Surne Bilbao","cap":10014.0,"fmean":8546,"n":2,"act":8709,"fplayed":8408,"naive":8360},{"club":"UCAM Murcia","cap":7454.0,"fmean":7327,"n":2,"act":6911,"fplayed":7379,"naive":6890},{"club":"Unicaja","cap":10699.0,"fmean":9343,"n":2,"act":9606,"fplayed":8634,"naive":9206},{"club":"Valencia Basket","cap":15600.0,"fmean":11916,"n":2,"act":11108,"fplayed":11864,"naive":11916},{"club":"iLERNA Lleida","cap":6100.0,"fmean":5814,"n":1,"act":5565,"fplayed":5424,"naive":5584}],"att":{"n":36,"mae":881.25,"bias":-436.5833333333333,"mae_naive":682.848047222222,"season_mean":7032.33660130719,"season_total":2151895.0,"last_mean":6807},"att_top":[{"date":"2027-01-04","home":"Valencia Basket","away":"Real Madrid","att":13121},{"date":"2027-02-07","home":"Valencia Basket","away":"Asisa Joventut","att":12987},{"date":"2026-12-20","home":"Valencia Basket","away":"La Laguna Tenerife","att":12864},{"date":"2026-09-27","home":"Valencia Basket","away":"iLERNA Lleida","att":12648},{"date":"2027-05-02","home":"Valencia Basket","away":"Unicaja","att":12618}],"shots":[{"name":"A. Reyes","club":"Asisa Joventut","mv":1,"basis":"2025-26 (312 shots)","rim":0.128,"o2":0.173,"th":0.699},{"name":"E. Ndiaye","club":"Asisa Joventut","mv":1,"basis":"2024-25 (109 shots)","rim":0.174,"o2":0.257,"th":0.569},{"name":"E. Sulejmanovic","club":"Asisa Joventut","mv":1,"basis":"2025-26 (144 shots)","rim":0.271,"o2":0.368,"th":0.361},{"name":"L. Hakanson","club":"Asisa Joventut","mv":0,"basis":"2025-26 (214 shots)","rim":0.15,"o2":0.234,"th":0.617},{"name":"N. Laprovittola","club":"Asisa Joventut","mv":1,"basis":"2025-26 (113 shots)","rim":0.186,"o2":0.248,"th":0.566},{"name":"R. Rubio","club":"Asisa Joventut","mv":0,"basis":"2025-26 (279 shots)","rim":0.19,"o2":0.444,"th":0.366},{"name":"S. Birgander","club":"Asisa Joventut","mv":0,"basis":"2025-26 (159 shots)","rim":0.421,"o2":0.579,"th":0.0},{"name":"A. Ubal","club":"Bar\u00e7a","mv":1,"basis":"2025-26 (211 shots)","rim":0.327,"o2":0.313,"th":0.36},{"name":"D. Brizuela","club":"Bar\u00e7a","mv":0,"basis":"2025-26 (223 shots)","rim":0.094,"o2":0.3,"th":0.605},{"name":"J. N\u00fa\u00f1ez","club":"Bar\u00e7a","mv":0,"basis":"2024-25 (97 shots)","rim":0.309,"o2":0.278,"th":0.412},{"name":"J. Parra","club":"Bar\u00e7a","mv":0,"basis":"2025-26 (189 shots)","rim":0.254,"o2":0.349,"th":0.397},{"name":"K. Punter","club":"Bar\u00e7a","mv":0,"basis":"2025-26 (303 shots)","rim":0.059,"o2":0.449,"th":0.492},{"name":"O. Balcerowski","club":"Bar\u00e7a","mv":1,"basis":"2025-26 (193 shots)","rim":0.497,"o2":0.415,"th":0.088},{"name":"C. Homesley","club":"Casademont Zaragoza","mv":1,"basis":"2024-25 (306 shots)","rim":0.075,"o2":0.389,"th":0.536},{"name":"G. Vives","club":"Casademont Zaragoza","mv":1,"basis":"2025-26 (89 shots)","rim":0.112,"o2":0.09,"th":0.798},{"name":"J. Fern\u00e1ndez","club":"Casademont Zaragoza","mv":0,"basis":"2025-26 (54 shots)","rim":0.426,"o2":0.167,"th":0.407},{"name":"J. Jaworski","club":"Casademont Zaragoza","mv":1,"basis":"2025-26 (352 shots)","rim":0.125,"o2":0.293,"th":0.582},{"name":"M. Gonz\u00e1lez","club":"Casademont Zaragoza","mv":0,"basis":"2025-26 (122 shots)","rim":0.189,"o2":0.246,"th":0.566},{"name":"N. Brussino","club":"Casademont Zaragoza","mv":1,"basis":"2025-26 (266 shots)","rim":0.169,"o2":0.214,"th":0.617},{"name":"S. Garc\u00eda","club":"Casademont Zaragoza","mv":1,"basis":"2024-25 (159 shots)","rim":0.226,"o2":0.195,"th":0.579},{"name":"T. Bell-Haynes","club":"Casademont Zaragoza","mv":0,"basis":"2025-26 (218 shots)","rim":0.408,"o2":0.239,"th":0.353},{"name":"J. P\u00e9rez","club":"FIATC Girona","mv":1,"basis":"2025-26 (184 shots)","rim":0.348,"o2":0.19,"th":0.462},{"name":"M. Geben","club":"FIATC Girona","mv":0,"basis":"2025-26 (227 shots)","rim":0.308,"o2":0.436,"th":0.256},{"name":"N. Maric","club":"FIATC Girona","mv":0,"basis":"2025-26 (133 shots)","rim":0.421,"o2":0.579,"th":0.0},{"name":"P. Busquets","club":"FIATC Girona","mv":0,"basis":"2025-26 (263 shots)","rim":0.167,"o2":0.335,"th":0.498},{"name":"S. Mart\u00ednez","club":"FIATC Girona","mv":0,"basis":"2025-26 (165 shots)","rim":0.248,"o2":0.364,"th":0.388},{"name":"E. Vila","club":"Kids&Us Manresa","mv":1,"basis":"2025-26 (70 shots)","rim":0.129,"o2":0.257,"th":0.614},{"name":"F. Bassas","club":"Kids&Us Manresa","mv":0,"basis":"2025-26 (235 shots)","rim":0.149,"o2":0.221,"th":0.63},{"name":"H. Benitez","club":"Kids&Us Manresa","mv":0,"basis":"2025-26 (136 shots)","rim":0.301,"o2":0.485,"th":0.213},{"name":"P. Oriola","club":"Kids&Us Manresa","mv":0,"basis":"2025-26 (122 shots)","rim":0.393,"o2":0.311,"th":0.295},{"name":"R. Villar","club":"Kids&Us Manresa","mv":1,"basis":"2025-26 (57 shots)","rim":0.316,"o2":0.404,"th":0.281},{"name":"C. Duarte","club":"Kosner Baskonia","mv":1,"basis":"2025-26 (212 shots)","rim":0.156,"o2":0.302,"th":0.542},{"name":"C. Frisch","club":"Kosner Baskonia","mv":0,"basis":"2025-26 (126 shots)","rim":0.095,"o2":0.317,"th":0.587},{"name":"K. Simmons","club":"Kosner Baskonia","mv":0,"basis":"2025-26 (224 shots)","rim":0.219,"o2":0.366,"th":0.415},{"name":"M. Howard","club":"Kosner Baskonia","mv":0,"basis":"2025-26 (123 shots)","rim":0.065,"o2":0.244,"th":0.691},{"name":"M. Spagnolo","club":"Kosner Baskonia","mv":0,"basis":"2025-26 (182 shots)","rim":0.231,"o2":0.533,"th":0.236},{"name":"R. Kurucs","club":"Kosner Baskonia","mv":0,"basis":"2025-26 (168 shots)","rim":0.167,"o2":0.369,"th":0.464},{"name":"T. Sedekerskis","club":"Kosner Baskonia","mv":0,"basis":"2024-25 (182 shots)","rim":0.28,"o2":0.379,"th":0.341},{"name":"A. Doornekamp","club":"La Laguna Tenerife","mv":0,"basis":"2025-26 (152 shots)","rim":0.046,"o2":0.092,"th":0.862},{"name":"A. Kurucs","club":"La Laguna Tenerife","mv":1,"basis":"2025-26 (199 shots)","rim":0.126,"o2":0.176,"th":0.698},{"name":"B. Fitipaldo","club":"La Laguna Tenerife","mv":0,"basis":"2025-26 (193 shots)","rim":0.073,"o2":0.166,"th":0.762},{"name":"E. Happ","club":"La Laguna Tenerife","mv":1,"basis":"2025-26 (230 shots)","rim":0.583,"o2":0.404,"th":0.013},{"name":"G. Shermadini","club":"La Laguna Tenerife","mv":0,"basis":"2025-26 (201 shots)","rim":0.721,"o2":0.279,"th":0.0},{"name":"J. Fern\u00e1ndez","club":"La Laguna Tenerife","mv":0,"basis":"2025-26 (253 shots)","rim":0.273,"o2":0.292,"th":0.435},{"name":"L\u00f3pez-Arostegui","club":"La Laguna Tenerife","mv":1,"basis":"2025-26 (74 shots)","rim":0.23,"o2":0.216,"th":0.554},{"name":"M. Huertas","club":"La Laguna Tenerife","mv":0,"basis":"2025-26 (342 shots)","rim":0.105,"o2":0.684,"th":0.211},{"name":"T. Abromaitis","club":"La Laguna Tenerife","mv":0,"basis":"2025-26 (139 shots)","rim":0.23,"o2":0.209,"th":0.561},{"name":"W. Van Beck","club":"La Laguna Tenerife","mv":0,"basis":"2025-26 (123 shots)","rim":0.081,"o2":0.187,"th":0.732},{"name":"G. Conditt","club":"Leyma Coru\u00f1a","mv":1,"basis":"2024-25 (149 shots)","rim":0.544,"o2":0.436,"th":0.02},{"name":"K. Silins","club":"Leyma Coru\u00f1a","mv":0,"basis":"2024-25 (58 shots)","rim":0.345,"o2":0.224,"th":0.431},{"name":"T. Dimsa","club":"Leyma Coru\u00f1a","mv":1,"basis":"2024-25 (63 shots)","rim":0.111,"o2":0.127,"th":0.762},{"name":"C. Agada","club":"Monbus Obradoiro","mv":1,"basis":"2025-26 (274 shots)","rim":0.266,"o2":0.416,"th":0.318},{"name":"F. Dos Anjos","club":"Monbus Obradoiro","mv":1,"basis":"2024-25 (96 shots)","rim":0.698,"o2":0.302,"th":0.0},{"name":"J. Soriano","club":"Monbus Obradoiro","mv":1,"basis":"2025-26 (79 shots)","rim":0.494,"o2":0.506,"th":0.0},{"name":"L. Meindl","club":"Monbus Obradoiro","mv":1,"basis":"2025-26 (312 shots)","rim":0.327,"o2":0.292,"th":0.381},{"name":"Y. Barrueta","club":"Monbus Obradoiro","mv":1,"basis":"2024-25 (339 shots)","rim":0.118,"o2":0.109,"th":0.773},{"name":"A. Best","club":"MoraBanc Andorra","mv":0,"basis":"2025-26 (235 shots)","rim":0.14,"o2":0.306,"th":0.553},{"name":"A. Pustovyi","club":"MoraBanc Andorra","mv":0,"basis":"2025-26 (210 shots)","rim":0.5,"o2":0.481,"th":0.019},{"name":"C. Ortega","club":"MoraBanc Andorra","mv":0,"basis":"2025-26 (64 shots)","rim":0.172,"o2":0.297,"th":0.531},{"name":"K. Kuric","club":"MoraBanc Andorra","mv":0,"basis":"2025-26 (271 shots)","rim":0.085,"o2":0.402,"th":0.513},{"name":"K. Robertson","club":"MoraBanc Andorra","mv":1,"basis":"2025-26 (141 shots)","rim":0.128,"o2":0.376,"th":0.496},{"name":"R. Luz","club":"MoraBanc Andorra","mv":0,"basis":"2025-26 (76 shots)","rim":0.197,"o2":0.434,"th":0.368},{"name":"A. Abalde","club":"Real Madrid","mv":0,"basis":"2025-26 (119 shots)","rim":0.151,"o2":0.311,"th":0.538},{"name":"A. Feliz","club":"Real Madrid","mv":0,"basis":"2025-26 (148 shots)","rim":0.399,"o2":0.236,"th":0.365},{"name":"C. Okeke","club":"Real Madrid","mv":0,"basis":"2025-26 (131 shots)","rim":0.229,"o2":0.107,"th":0.664},{"name":"F. Campazzo","club":"Real Madrid","mv":0,"basis":"2025-26 (198 shots)","rim":0.177,"o2":0.222,"th":0.601},{"name":"G. Deck","club":"Real Madrid","mv":0,"basis":"2025-26 (91 shots)","rim":0.363,"o2":0.286,"th":0.352},{"name":"G. Procida","club":"Real Madrid","mv":0,"basis":"2025-26 (117 shots)","rim":0.274,"o2":0.094,"th":0.632},{"name":"J. Pradilla","club":"Real Madrid","mv":1,"basis":"2025-26 (208 shots)","rim":0.466,"o2":0.207,"th":0.327},{"name":"Luwawu-Cabarrot","club":"Real Madrid","mv":1,"basis":"2025-26 (391 shots)","rim":0.141,"o2":0.309,"th":0.55},{"name":"S. Llull","club":"Real Madrid","mv":0,"basis":"2025-26 (219 shots)","rim":0.169,"o2":0.183,"th":0.648},{"name":"T. Maledon","club":"Real Madrid","mv":0,"basis":"2025-26 (149 shots)","rim":0.403,"o2":0.302,"th":0.295},{"name":"W. Tavares","club":"Real Madrid","mv":0,"basis":"2025-26 (94 shots)","rim":0.702,"o2":0.298,"th":0.0},{"name":"C. Audige","club":"Recoletas Salud SPB","mv":1,"basis":"2025-26 (122 shots)","rim":0.197,"o2":0.279,"th":0.525},{"name":"D. D\u00edez","club":"Recoletas Salud SPB","mv":0,"basis":"2025-26 (150 shots)","rim":0.213,"o2":0.2,"th":0.587},{"name":"R. Guerrero","club":"Recoletas Salud SPB","mv":1,"basis":"2024-25 (73 shots)","rim":0.685,"o2":0.315,"th":0.0},{"name":"S. Doumbouya","club":"Recoletas Salud SPB","mv":1,"basis":"2024-25 (259 shots)","rim":0.297,"o2":0.398,"th":0.305},{"name":"Z. Samar","club":"Recoletas Salud SPB","mv":1,"basis":"2025-26 (145 shots)","rim":0.214,"o2":0.421,"th":0.366},{"name":"A. Aranitovic","club":"R\u00edo Breog\u00e1n","mv":0,"basis":"2025-26 (193 shots)","rim":0.15,"o2":0.306,"th":0.544},{"name":"D. Brankovic","club":"R\u00edo Breog\u00e1n","mv":0,"basis":"2025-26 (240 shots)","rim":0.554,"o2":0.267,"th":0.179},{"name":"D. Mavra","club":"R\u00edo Breog\u00e1n","mv":0,"basis":"2025-26 (237 shots)","rim":0.215,"o2":0.405,"th":0.38},{"name":"F. Alonso","club":"R\u00edo Breog\u00e1n","mv":0,"basis":"2025-26 (313 shots)","rim":0.16,"o2":0.275,"th":0.565},{"name":"M. Andric","club":"R\u00edo Breog\u00e1n","mv":0,"basis":"2025-26 (182 shots)","rim":0.099,"o2":0.225,"th":0.676},{"name":"A. Font","club":"Surne Bilbao","mv":0,"basis":"2025-26 (90 shots)","rim":0.2,"o2":0.144,"th":0.656},{"name":"D. Hilliard","club":"Surne Bilbao","mv":0,"basis":"2025-26 (325 shots)","rim":0.215,"o2":0.268,"th":0.517},{"name":"H. Frey","club":"Surne Bilbao","mv":0,"basis":"2025-26 (152 shots)","rim":0.197,"o2":0.27,"th":0.533},{"name":"L. Petrasek","club":"Surne Bilbao","mv":0,"basis":"2025-26 (187 shots)","rim":0.251,"o2":0.182,"th":0.567},{"name":"M. Krampelj","club":"Surne Bilbao","mv":0,"basis":"2025-26 (170 shots)","rim":0.471,"o2":0.135,"th":0.394},{"name":"M. Normantas","club":"Surne Bilbao","mv":0,"basis":"2025-26 (233 shots)","rim":0.176,"o2":0.305,"th":0.519},{"name":"T. Hlinason","club":"Surne Bilbao","mv":0,"basis":"2025-26 (180 shots)","rim":0.811,"o2":0.189,"th":0.0},{"name":"D. Ennis","club":"UCAM Murcia","mv":0,"basis":"2025-26 (232 shots)","rim":0.353,"o2":0.194,"th":0.453},{"name":"E. Cate","club":"UCAM Murcia","mv":0,"basis":"2025-26 (146 shots)","rim":0.575,"o2":0.425,"th":0.0},{"name":"H. Sant-Roos","club":"UCAM Murcia","mv":0,"basis":"2025-26 (156 shots)","rim":0.429,"o2":0.231,"th":0.34},{"name":"J. Marcos","club":"UCAM Murcia","mv":1,"basis":"2025-26 (117 shots)","rim":0.222,"o2":0.214,"th":0.564},{"name":"J. Radebaugh","club":"UCAM Murcia","mv":0,"basis":"2025-26 (196 shots)","rim":0.189,"o2":0.153,"th":0.658},{"name":"M. Forrest","club":"UCAM Murcia","mv":0,"basis":"2025-26 (318 shots)","rim":0.233,"o2":0.182,"th":0.585},{"name":"M. Steinbergs","club":"UCAM Murcia","mv":1,"basis":"2025-26 (191 shots)","rim":0.11,"o2":0.152,"th":0.738},{"name":"S. Raieste","club":"UCAM Murcia","mv":0,"basis":"2025-26 (116 shots)","rim":0.353,"o2":0.103,"th":0.543},{"name":"T. Nakic","club":"UCAM Murcia","mv":0,"basis":"2025-26 (144 shots)","rim":0.111,"o2":0.111,"th":0.778},{"name":"W. Falk","club":"UCAM Murcia","mv":0,"basis":"2025-26 (64 shots)","rim":0.484,"o2":0.203,"th":0.312},{"name":"A. D\u00edaz","club":"Unicaja","mv":0,"basis":"2025-26 (118 shots)","rim":0.042,"o2":0.322,"th":0.636},{"name":"A. Noua","club":"Unicaja","mv":1,"basis":"2024-25 (406 shots)","rim":0.3,"o2":0.372,"th":0.328},{"name":"C. Hunt","club":"Unicaja","mv":1,"basis":"2025-26 (364 shots)","rim":0.275,"o2":0.302,"th":0.423},{"name":"D. Kravish","club":"Unicaja","mv":0,"basis":"2025-26 (68 shots)","rim":0.074,"o2":0.721,"th":0.206},{"name":"J. Barreiro","club":"Unicaja","mv":0,"basis":"2025-26 (124 shots)","rim":0.21,"o2":0.137,"th":0.653},{"name":"K. Perry","club":"Unicaja","mv":0,"basis":"2025-26 (288 shots)","rim":0.128,"o2":0.378,"th":0.493},{"name":"M. Pantzar","club":"Unicaja","mv":1,"basis":"2025-26 (227 shots)","rim":0.352,"o2":0.344,"th":0.304},{"name":"M. Thomas","club":"Unicaja","mv":1,"basis":"2025-26 (142 shots)","rim":0.063,"o2":0.303,"th":0.634},{"name":"N. Djedovic","club":"Unicaja","mv":0,"basis":"2025-26 (143 shots)","rim":0.266,"o2":0.35,"th":0.385},{"name":"T. Kalinoski","club":"Unicaja","mv":0,"basis":"2025-26 (195 shots)","rim":0.092,"o2":0.267,"th":0.641},{"name":"W. Hernang\u00f3mez","club":"Unicaja","mv":1,"basis":"2025-26 (157 shots)","rim":0.548,"o2":0.439,"th":0.013},{"name":"D. Osetkowski","club":"Valencia Basket","mv":1,"basis":"2024-25 (273 shots)","rim":0.238,"o2":0.249,"th":0.513},{"name":"G. Corbal\u00e1n","club":"Valencia Basket","mv":1,"basis":"2025-26 (358 shots)","rim":0.302,"o2":0.285,"th":0.413},{"name":"J. Puerto","club":"Valencia Basket","mv":0,"basis":"2025-26 (145 shots)","rim":0.145,"o2":0.166,"th":0.69},{"name":"K. Taylor","club":"Valencia Basket","mv":0,"basis":"2025-26 (210 shots)","rim":0.271,"o2":0.367,"th":0.362},{"name":"M. Saint-Supery","club":"Valencia Basket","mv":1,"basis":"2024-25 (180 shots)","rim":0.311,"o2":0.289,"th":0.4},{"name":"N. Reuvers","club":"Valencia Basket","mv":0,"basis":"2025-26 (199 shots)","rim":0.296,"o2":0.256,"th":0.447},{"name":"N. Sako","club":"Valencia Basket","mv":0,"basis":"2025-26 (92 shots)","rim":0.663,"o2":0.337,"th":0.0},{"name":"O. Moore","club":"Valencia Basket","mv":0,"basis":"2025-26 (207 shots)","rim":0.343,"o2":0.28,"th":0.377},{"name":"D. Garc\u00eda","club":"iLERNA Lleida","mv":0,"basis":"2025-26 (68 shots)","rim":0.103,"o2":0.338,"th":0.559},{"name":"J. Batemon","club":"iLERNA Lleida","mv":0,"basis":"2025-26 (330 shots)","rim":0.224,"o2":0.288,"th":0.488},{"name":"J. Shurna","club":"iLERNA Lleida","mv":0,"basis":"2025-26 (142 shots)","rim":0.134,"o2":0.19,"th":0.676},{"name":"K. Kuath","club":"iLERNA Lleida","mv":1,"basis":"2025-26 (116 shots)","rim":0.534,"o2":0.457,"th":0.009},{"name":"M. Ejim","club":"iLERNA Lleida","mv":0,"basis":"2025-26 (286 shots)","rim":0.339,"o2":0.364,"th":0.297},{"name":"M. Hughes","club":"iLERNA Lleida","mv":1,"basis":"2025-26 (220 shots)","rim":0.073,"o2":0.282,"th":0.645},{"name":"M. Sanz","club":"iLERNA Lleida","mv":0,"basis":"2025-26 (123 shots)","rim":0.415,"o2":0.106,"th":0.48},{"name":"O. Paul\u00ed","club":"iLERNA Lleida","mv":0,"basis":"2025-26 (232 shots)","rim":0.388,"o2":0.22,"th":0.392}]};
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+function S(tag, attrs, parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function H(tag, attrs, html){const e=document.createElement(tag);if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]);if(html!=null)e.innerHTML=html;return e;}
+const pct=(x,d=0)=>(100*x).toFixed(d)+'%';
+const sgn=(x,d=1)=>(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(d);
+const seasonLabel=s=>(s-1)+'-'+String(s).slice(2);
+const SHORT={'Kids&Us Manresa':'Manresa','Recoletas Salud SPB':'Burgos','FIATC Girona':'Girona','Asisa Joventut':'Joventut','UCAM Murcia':'Murcia','Leyma Coruña':'Coruña','Casademont Zaragoza':'Zaragoza','Surne Bilbao':'Bilbao','MoraBanc Andorra':'Andorra','La Laguna Tenerife':'Tenerife','Monbus Obradoiro':'Obradoiro','Valencia Basket':'Valencia','Kosner Baskonia':'Baskonia','Río Breogán':'Breogán','iLERNA Lleida':'Lleida','Real Madrid':'Real Madrid','Unicaja':'Unicaja','Barça':'Barça'};
+const sh=n=>SHORT[n]||n;
+const tip=$('#tip');
+function bindTip(node, html){
+  node.addEventListener('mousemove',e=>{tip.innerHTML=html;tip.classList.add('on');
+    const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;
+    if(x+w>innerWidth-8)x=e.clientX-w-14;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=x+'px';tip.style.top=y+'px';});
+  node.addEventListener('mouseleave',()=>tip.classList.remove('on'));
+}
+const fmtDate=d=>new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+const st=D.standings, sc=D.scorecard, att=D.att;
+$('#footGen').textContent=`Numbers through round ${D.through_round} (${D.games_played} games, last on ${D.last_date}). Generated ${D.generated}.`;
+
+/* ---------- ticker ---------- */
+(function(){
+  const t=$('#ticker');
+  t.innerHTML=`<div class="tk-label">Round ${D.next_round}<small>Win odds</small></div>`+D.next_games.map(g=>{
+    const hf=g.ph>=.5;
+    return `<a class="tk" href="#picks" style="text-decoration:none;color:inherit"><span class="d">${fmtDate(g.date)}</span>
+      <span class="t${hf?' fav':''}"><span>${sh(g.home)}</span><span>${pct(g.ph)}</span></span>
+      <span class="t${hf?'':' fav'}"><span>${sh(g.away)}</span><span>${pct(1-g.ph)}</span></span></a>`;}).join('');
+})();
+
+/* ---------- lead ---------- */
+(function(){
+  const a=st[0], b=st[1], c=st[2], pre=[...st].sort((x,y)=>y.pre-x.pre)[0];
+  $('#leadKicker').textContent=`Liga Endesa · after round ${D.through_round}`;
+  $('#leadHead').textContent= a.w===a.gp ? `${a.club} perfect so far and on top of the projection` : `${a.club} lead the race after round ${D.through_round}`;
+  $('#leadDek').textContent=`${a.club} (${a.w}-${a.l}) now project to ${a.exp.toFixed(1)} wins, ahead of ${b.club} (${b.exp.toFixed(1)}) and ${c.club} (${c.exp.toFixed(1)}). ${pre.club===a.club?'':pre.club+' were the pre-season favourite. '}Four rounds is a small sample, so this season's results count for only about a fifth of each team's rating.`;
+  // lead chart: top six ranges
+  const top=st.slice(0,6), W=560, rh=30, m={l:140,r:40,t:6,b:24}, Hc=m.t+m.b+top.length*rh, lo=10, hi=34;
+  const X=v=>m.l+(v-lo)/(hi-lo)*(W-m.l-m.r);
+  const svg=S('svg',{viewBox:`0 0 ${W} ${Hc}`,role:'img','aria-label':'Projected wins for the top six clubs'});
+  [10,14,18,22,26,30,34].forEach(v=>{S('line',{x1:X(v),x2:X(v),y1:m.t,y2:Hc-m.b,stroke:'var(--rule)'},svg);S('text',{x:X(v),y:Hc-6,'text-anchor':'middle'},svg).textContent=v;});
+  top.forEach((r,i)=>{const y=m.t+i*rh+rh/2;
+    S('text',{x:m.l-10,y:y+4,'text-anchor':'end',class:'lbl'},svg).textContent=r.club;
+    S('rect',{x:X(r.p10),y:y-6,width:X(r.p90)-X(r.p10),height:12,rx:4,fill:'var(--accent-soft)'},svg);
+    S('rect',{x:X(r.pre)-1,y:y-9,width:2,height:18,fill:'var(--muted)'},svg);
+    S('circle',{cx:X(r.exp),cy:y,r:6,fill:i===0?'var(--brand)':'var(--accent)',stroke:'var(--card)','stroke-width':2},svg);
+    S('text',{x:X(r.p90)+8,y:y+4,style:'fill:var(--ink2)'},svg).textContent=r.exp.toFixed(1);
+    const hit=S('rect',{x:0,y:y-rh/2,width:W,height:rh,fill:'transparent'},svg);
+    bindTip(hit,`<b>${r.club}</b> ${r.w}-${r.l}<br>projected ${r.exp.toFixed(1)} wins (80%: ${r.p10}–${r.p90})<br>pre-season ${r.pre.toFixed(1)} · top 4 ${pct(r.top4)}`);
+  });
+  $('#leadChart').appendChild(svg);
+  // rail
+  const big=st.filter(r=>r.bot2>0).sort((x,y)=>y.bot2-x.bot2)[0];
+  const items=[
+    ['#record',`${sc.right}/${sc.n}`,'Winners called by the pre-season forecast, right on its 68% backtest'],
+    ['#record',`+${Math.round(sc.bias_total)}`,'Points per game above the scoring forecast: the league is playing faster'],
+    ['#referees','+0.61','More fouls called on away teams per game, 25 seasons running'],
+    ['#referees','0','Home whistle in 2020-21, when games were played without fans'],
+    ['#attendance',`${(att.season_total/1e6).toFixed(2)}M`,'Fans forecast this season; three big arenas are running behind'],
+    ['#standings',pct(big.bot2),`${big.club}'s chance of relegation, the highest in the league`],
+  ];
+  $('#rail').innerHTML=items.map(i=>`<li><a href="${i[0]}"><span class="stat">${i[1]}</span><span class="hl">${i[2]}</span></a></li>`).join('');
+})();
+
+/* ---------- standings ---------- */
+(function(){
+  $('#stdNote').textContent=`Updated after round ${D.through_round}`;
+  const W=250,Hh=22,x=v=>6+(v/34)*(W-40);
+  let html='<thead><tr><th>#</th><th>Club</th><th class="n">W-L</th><th>Projected wins</th><th class="n hide-sm">Since pre-season</th><th class="n">Playoffs</th><th class="n">Relegation</th></tr></thead><tbody>';
+  st.forEach((r,i)=>{
+    const d=r.exp-r.pre, cls=i===7||i===15?' class="cut"':'';
+    const z=i<8?'<span class="zone po">PO</span>':i>=16?'<span class="zone rl">REL</span>':'';
+    html+=`<tr${cls}><td class="rk">${i+1}</td><td class="club">${r.club}${z}</td><td class="n">${r.w}-${r.l}</td>
+      <td><svg class="wb" width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${r.club}: ${r.exp.toFixed(1)} projected wins, 80% range ${r.p10} to ${r.p90}">
+      <rect x="${x(0)}" y="10" width="${x(34)-x(0)}" height="2" rx="1" fill="var(--track)"></rect>
+      <rect x="${x(r.p10)}" y="6" width="${x(r.p90)-x(r.p10)}" height="10" rx="4" fill="var(--accent-soft)"></rect>
+      <rect x="${x(r.pre)-1}" y="3" width="2" height="16" fill="var(--muted)"></rect>
+      <circle cx="${x(r.exp)}" cy="11" r="5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"></circle>
+      <text x="${x(r.p90)+6}" y="15" style="font-size:11px;fill:var(--ink2)">${r.exp.toFixed(1)}</text></svg></td>
+      <td class="n hide-sm"><span class="delta ${d>0.05?'up':d<-0.05?'dn':''}">${d>0.05?'▲':d<-0.05?'▼':''} ${sgn(d)}</span></td>
+      <td class="n">${pct(r.top8)}<span class="meter"><b style="width:${100*r.top8}%"></b></span></td>
+      <td class="n">${pct(r.bot2)}<span class="meter risk"><b style="width:${100*r.bot2}%"></b></span></td></tr>`;
+  });
+  $('#standingsTbl').innerHTML=html+'</tbody>';
+})();
+
+/* ---------- picks ---------- */
+(function(){
+  $('#picksTitle').textContent=`Round ${D.next_round} picks`;
+  const box=$('#games');
+  D.next_games.forEach(g=>{
+    const fav=g.ph>=.5?sh(g.home):sh(g.away), p=Math.max(g.ph,1-g.ph);
+    const c=H('div',{class:'game'});
+    c.innerHTML=`<div class="date"><span>${fmtDate(g.date)}</span><b>Pick: ${fav} ${pct(p)}</b></div>
+      <div class="teams"><span>${g.home}</span><span class="s">${g.sh}</span><span>${g.away}</span><span class="s">${g.sa}</span></div>
+      <div class="split" aria-label="Home win probability ${pct(g.ph)}"><b style="flex:${g.ph}"></b><i style="flex:${1-g.ph}"></i></div>
+      <div class="row"><span>Home ${pct(g.ph)}</span><span>Away ${pct(1-g.ph)}</span></div>
+      <div class="row"><span>Total ${g.total.toFixed(0)} · o/u ${g.tl}</span><span>80%: ${g.lo.toFixed(0)}–${g.hi.toFixed(0)}</span></div>`;
+    box.appendChild(c);
+  });
+})();
+
+/* ---------- track record ---------- */
+(function(){
+  $('#recHead').textContent=`Called ${sc.right} of ${sc.n} winners. Missed on scoring.`;
+  const rows=[[`${sc.right}/${sc.n}`,`games where we picked the winner (${pct(sc.right/sc.n)}). Testing on past seasons said to expect about 68%, so the model is right on track.`],
+    [`${sc.mae_margin.toFixed(1)}`,`points per game is how far our predicted winning margin has missed the real one, on average. Predicting a 5-point win when the team won by 15 is a 10-point miss. Past seasons said to expect about 10.`],
+    [`+${sc.bias_total.toFixed(0)}`,`more points per game than we predicted (both teams combined). Scoring is up across the league this season, and our preseason numbers did not see it coming.`],
+    ['+4.6',`points per game is how much we still under-predict scoring after updating the model with this season’s games. That fixes about two-thirds of the miss.`],
+    ['70.2%',`of winners picked when we re-ran the model on 15 past seasons. Picking the home team every time gets only 61.1%.`]];
+  $('#recNums').innerHTML=rows.map(r=>`<div class="row"><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('');
+  $('#backtest').innerHTML=`<thead><tr><th>Who picks the winner</th><th class="n">Correct</th><th class="n hide-sm">Log loss</th></tr></thead><tbody>
+    <tr><td>Always the home team</td><td class="n">61.1%</td><td class="n hide-sm">0.668</td></tr>
+    <tr><td>Model, before the season</td><td class="n">68.1%</td><td class="n hide-sm">0.594</td></tr>
+    <tr><td>Model, updated in season</td><td class="n">70.2%</td><td class="n hide-sm">0.570</td></tr></tbody>`;
+  const W=460,Hs=320,m={l:40,r:12,t:12,b:34},lim=45;
+  const svg=S('svg',{viewBox:`0 0 ${W} ${Hs}`,role:'img','aria-label':'Predicted against actual home margin for each game'});
+  const X=v=>m.l+(v+lim)/(2*lim)*(W-m.l-m.r), Y=v=>Hs-m.b-(v+lim)/(2*lim)*(Hs-m.t-m.b);
+  [-40,-20,0,20,40].forEach(v=>{
+    S('line',{x1:X(v),x2:X(v),y1:m.t,y2:Hs-m.b,stroke:'var(--rule)','stroke-width':v===0?1.5:1},svg);
+    S('line',{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),stroke:'var(--rule)','stroke-width':v===0?1.5:1},svg);
+    S('text',{x:X(v),y:Hs-m.b+16,'text-anchor':'middle'},svg).textContent=v>0?'+'+v:v;
+    S('text',{x:m.l-6,y:Y(v)+4,'text-anchor':'end'},svg).textContent=v>0?'+'+v:v;
+  });
+  S('line',{x1:X(-lim),y1:Y(-lim),x2:X(lim),y2:Y(lim),stroke:'var(--muted)','stroke-dasharray':'4 4'},svg);
+  S('text',{x:(m.l+W-m.r)/2,y:Hs-4,'text-anchor':'middle',class:'lbl'},svg).textContent='predicted home margin';
+  S('text',{x:12,y:(m.t+Hs-m.b)/2,'text-anchor':'middle',class:'lbl',transform:`rotate(-90 12 ${(m.t+Hs-m.b)/2})`},svg).textContent='actual home margin';
+  D.sc_rows.forEach(r=>{
+    const cx=X(Math.max(-lim,Math.min(lim,r.pm))), cy=Y(Math.max(-lim,Math.min(lim,r.am)));
+    S('circle',{cx,cy,r:5,fill:r.ok?'var(--accent)':'var(--card)',stroke:r.ok?'var(--card)':'var(--c2)','stroke-width':r.ok?1.5:2},svg);
+    const hit=S('circle',{cx,cy,r:10,fill:'transparent'},svg);
+    bindTip(hit,`<b>R${r.r} ${r.home} ${r.hs}-${r.as_} ${r.away}</b><br>predicted margin ${sgn(r.pm)}, actual ${sgn(r.am,0)}<br>home win probability ${pct(r.p)} · ${r.ok?'winner right':'winner wrong'}`);
+  });
+  $('#scatter').appendChild(svg);
+})();
+
+/* ---------- referees ---------- */
+(function(){
+  $('#refSpan').textContent=`${D.ref_games.toLocaleString()} games, 2001-02 to 2025-26`;
+  const reg=D.refs.filter(r=>r.games>=100), hiR=reg.reduce((a,b)=>b.fouls[0]>a.fouls[0]?b:a), loR=reg.reduce((a,b)=>b.fouls[0]<a.fouls[0]?b:a), spread=hiR.fouls[0]-loR.fouls[0];
+  const rows=[['+0.61',`more fouls called on the visiting team than on the home team, every game. Small, but real: we are 95% sure the true number is between 0.44 and 0.78, so it is not a fluke.`],
+    ['+1.0',`more free throws per game for the home team than for the visitors.`],
+    ['−0.7',`In 2020-21, when games were played in empty arenas, the home team’s foul advantage dropped by 0.7 a game, wiping it out. Its free-throw advantage dropped by 1.7.`],
+    ['0',`difference a bigger crowd makes. Adding 1,000 fans changed the foul gap by just 0.06, too small to tell apart from chance. It is fans vs. no fans that matters, not how many.`],
+    [`${spread.toFixed(1)}`,`more fouls per 100 possessions from the strictest regular referee (${hiR.name.split(' ').slice(-2,-1)[0]}) than from the most lenient (${loR.name.split(' ').slice(-2,-1)[0]}). In a normal game that is about ${(spread*0.78).toFixed(0)} extra fouls, just from who is holding the whistle.`]];
+  $('#refNums').innerHTML=rows.map(r=>`<div class="row"><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('');
+  const ha=D.home_away, nf=ha.find(r=>r.s===2021);
+  let mode='f';
+  function drawHA(){
+    const box=$('#haChart'); box.innerHTML='';
+    const k=mode, lo=k==='f'?'lo':'tlo', hi=k==='f'?'hi':'thi', v=k==='f'?'f':'t';
+    const W=760,Hc=280,m={l:44,r:30,t:16,b:30};
+    const ymin=Math.min(-1.5,...ha.map(r=>r[lo])), ymax=Math.max(...ha.map(r=>r[hi]))+0.3;
+    const X=s=>m.l+(s-2002)/(2026-2002)*(W-m.l-m.r), Y=y=>m.t+(ymax-y)/(ymax-ymin)*(Hc-m.t-m.b);
+    const svg=S('svg',{viewBox:`0 0 ${W} ${Hc}`,role:'img','aria-label':'Home advantage by season'});
+    const step=k==='f'?0.5:1;
+    for(let y=Math.ceil(ymin/step)*step;y<=ymax;y+=step){
+      S('line',{x1:m.l,x2:W-m.r,y1:Y(y),y2:Y(y),stroke:'var(--rule)','stroke-width':Math.abs(y)<1e-9?1.5:1},svg);
+      S('text',{x:m.l-8,y:Y(y)+4,'text-anchor':'end'},svg).textContent=(y>0?'+':'')+y.toFixed(1);}
+    [2002,2006,2010,2014,2018,2022,2026].forEach(s=>S('text',{x:X(s),y:Hc-8,'text-anchor':'middle'},svg).textContent=seasonLabel(s));
+    const band='M'+ha.map(r=>`${X(r.s)},${Y(r[hi])}`).join('L')+'L'+ha.slice().reverse().map(r=>`${X(r.s)},${Y(r[lo])}`).join('L')+'Z';
+    S('path',{d:band,fill:'var(--accent)',opacity:.14},svg);
+    S('path',{d:'M'+ha.map(r=>`${X(r.s)},${Y(r[v])}`).join('L'),fill:'none',stroke:'var(--accent)','stroke-width':2},svg);
+    ha.forEach(r=>{const special=r.s===2021;
+      S('circle',{cx:X(r.s),cy:Y(r[v]),r:special?6:3.5,fill:special?'var(--brand)':'var(--accent)',stroke:'var(--card)','stroke-width':1.5},svg);
+      const hit=S('rect',{x:X(r.s)-14,y:m.t,width:28,height:Hc-m.t-m.b,fill:'transparent'},svg);
+      bindTip(hit,`<b>${r.label}</b>${special?' · no fans':''}<br>${k==='f'?'away minus home fouls':'home minus away free throws'}: ${sgn(r[v],2)} per game<br>95%: ${sgn(r[lo],2)} to ${sgn(r[hi],2)} · ${r.n} games`);});
+    S('text',{x:X(2021)-8,y:Y(nf[v])+22,'text-anchor':'end',class:'lbl'},svg).textContent='2020-21: no fans';
+    box.appendChild(svg);
+  }
+  document.querySelectorAll('[data-ha]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.ha;document.querySelectorAll('[data-ha]').forEach(x=>x.setAttribute('aria-pressed',x===b));drawHA();}));
+  drawHA();
+  let rm='fouls';
+  const notes={fouls:'Fouls per 100 possessions vs the average referee, after allowing for the clubs, season and the other two referees. 90% intervals.',
+               fta:'Free-throw attempts per 100 possessions vs the average referee, same adjustments. 90% intervals.',
+               away_bias:'How much more the away side is called for than the home side (fouls per 100 possessions), vs the average referee. 90% intervals.'};
+  const legends={fouls:['calls more','calls fewer'],fta:['more free throws','fewer free throws'],away_bias:['leans further toward home','leans less toward home']};
+  function drawRefs(){
+    const min=+$('#minGames').value;
+    const rows=D.refs.filter(r=>r.games>=min).sort((a,b)=>b[rm][0]-a[rm][0]);
+    $('#refChartNote').textContent=notes[rm]+` ${rows.length} referees with ${min}+ games.`;
+    $('#refLegend').innerHTML=`<span><i style="background:var(--c2)"></i>${legends[rm][0]} (significant)</span><span><i style="background:var(--accent)"></i>${legends[rm][1]} (significant)</span><span><i style="background:var(--neutral)"></i>not distinguishable from average</span>`;
+    const lw=200,W=760,rh=19,m={t:22,b:26},Hr=m.t+m.b+rows.length*rh;
+    const ext=Math.max(1.6,...rows.map(r=>Math.max(Math.abs(r[rm][1]),Math.abs(r[rm][2]))))+0.1;
+    const X=v=>lw+(v+ext)/(2*ext)*(W-lw-14);
+    const svg=S('svg',{viewBox:`0 0 ${W} ${Hr}`,width:W,role:'img','aria-label':'Referee effects with intervals'});
+    [-1.5,-1,-0.5,0,0.5,1,1.5].filter(t=>Math.abs(t)<=ext).forEach(t=>{S('line',{x1:X(t),x2:X(t),y1:m.t-6,y2:Hr-m.b,stroke:'var(--rule)','stroke-width':t===0?1.5:1},svg);
+      S('text',{x:X(t),y:Hr-8,'text-anchor':'middle'},svg).textContent=(t>0?'+':'')+t;});
+    S('text',{x:X(0),y:12,'text-anchor':'middle'},svg).textContent='average referee';
+    rows.forEach((r,i)=>{const [e,lo,hi,sg]=r[rm], y=m.t+i*rh+rh/2;
+      const col=sg?(e>0?'var(--c2)':'var(--accent)'):'var(--neutral)';
+      S('text',{x:lw-10,y:y+4,'text-anchor':'end',class:'lbl'},svg).textContent=r.name.length>28?r.name.slice(0,27)+'…':r.name;
+      S('line',{x1:X(lo),x2:X(hi),y1:y,y2:y,stroke:col,'stroke-width':2,'stroke-linecap':'round',opacity:sg?.9:.7},svg);
+      S('circle',{cx:X(e),cy:y,r:4.5,fill:col,stroke:'var(--card)','stroke-width':1.5},svg);
+      const hit=S('rect',{x:0,y:y-rh/2,width:W,height:rh,fill:'transparent'},svg);
+      bindTip(hit,`<b>${r.name}</b><br>${sgn(e,2)} vs average (90%: ${sgn(lo,2)} to ${sgn(hi,2)})<br>${r.games} games, ${seasonLabel(r.first)} to ${seasonLabel(r.last)}${sg?'<br>significant after correction':''}`);});
+    const box=$('#refChart'); box.innerHTML=''; box.appendChild(svg);
+  }
+  document.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{rm=b.dataset.rm;document.querySelectorAll('[data-rm]').forEach(x=>x.setAttribute('aria-pressed',x===b));drawRefs();}));
+  $('#minGames').addEventListener('change',drawRefs);
+  drawRefs();
+})();
+
+/* ---------- crowds ---------- */
+(function(){
+  $('#crowdDek').textContent=`The pre-season model expected ${Math.round(att.season_mean).toLocaleString()} fans a game, up from ${att.last_mean.toLocaleString()} last season. So far its prediction misses the real crowd by ${Math.round(att.mae).toLocaleString()} fans a game on average, worse than simply assuming every club draws what it drew last year. Three clubs explain most of it: Real Madrid, Leyma Coruña and Casademont Zaragoza play in large arenas with plenty of empty seats, and the model expected those seats to start filling. The forecast stays frozen as published; an in-season version that learns from this season's crowds comes later.`;
+  const rows=[[Math.round(att.mae).toLocaleString(),`fans per game is how far our crowd predictions have missed on average, over the ${att.n} games played so far. Predicting 6,000 fans when 7,000 showed up is a miss of 1,000. Testing on past seasons said to expect about 780.`],
+    [Math.round(att.mae_naive).toLocaleString(),`fans per game is the average miss if you skip the model and just assume every club draws the same crowds as last season. So far, that shortcut is beating our model.`],
+    [`${(att.season_total/1e6).toFixed(2)}M`,'fans predicted to attend over the full regular season'],
+    ['10/10',"of the 10 biggest crowds we predict this season are at Valencia’s Roig Arena"]];
+  $('#attNums').innerHTML=rows.map(r=>`<div class="row"><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('');
+  const cl=D.att_clubs.filter(c=>c.n>0).sort((p,q)=>q.fmean-p.fmean);
+  const lw=150,W=720,rh=26,m={t:8,b:28},Hc=m.t+m.b+cl.length*rh,max=16000;
+  const X=v=>lw+v/max*(W-lw-60);
+  const svg=S('svg',{viewBox:`0 0 ${W} ${Hc}`,width:W,role:'img','aria-label':'Attendance forecast against actual by club'});
+  [0,4000,8000,12000,16000].forEach(t=>{S('line',{x1:X(t),x2:X(t),y1:m.t,y2:Hc-m.b,stroke:'var(--rule)'},svg);S('text',{x:X(t),y:Hc-8,'text-anchor':'middle'},svg).textContent=t?(t/1000)+'k':'0';});
+  cl.forEach((c,i)=>{const y=m.t+i*rh+rh/2;
+    S('text',{x:lw-10,y:y+4,'text-anchor':'end',class:'lbl'},svg).textContent=c.club;
+    S('rect',{x:X(0),y:y-7,width:X(c.cap)-X(0),height:14,rx:3,fill:'var(--track)'},svg);
+    S('line',{x1:X(c.fplayed),x2:X(c.act),y1:y,y2:y,stroke:'var(--muted)','stroke-width':2},svg);
+    S('circle',{cx:X(c.fplayed),cy:y,r:5,fill:'var(--card)',stroke:'var(--muted)','stroke-width':2},svg);
+    S('circle',{cx:X(c.act),cy:y,r:5.5,fill:'var(--accent)',stroke:'var(--card)','stroke-width':1.5},svg);
+    const d=c.act-c.fplayed;
+    S('text',{x:Math.max(X(c.act),X(c.fplayed))+12,y:y+4},svg).textContent=(d>0?'+':'−')+Math.abs(d).toLocaleString();
+    const hit=S('rect',{x:0,y:y-rh/2,width:W,height:rh,fill:'transparent'},svg);
+    bindTip(hit,`<b>${c.club}</b> · ${c.n} home game${c.n>1?'s':''}<br>actual ${c.act.toLocaleString()} · forecast ${c.fplayed.toLocaleString()}<br>last season ${c.naive.toLocaleString()} · capacity ${Math.round(c.cap).toLocaleString()}`);});
+  $('#attChart').appendChild(svg);
+})();
+
+/* ---------- shots ---------- */
+(function(){
+  const stb=[['threes',.866,.800],['at the rim',.803,.483],['other 2s',.698,.131]];
+  const W=420,Hc=220,m={l:70,r:40,t:8,b:26},bh=16;
+  const X=v=>m.l+v*(W-m.l-m.r);
+  const svg=S('svg',{viewBox:`0 0 ${W} ${Hc}`,role:'img','aria-label':'Prediction score in percent for players who stayed and moved, by shot type'});
+  [0,.25,.5,.75,1].forEach(t=>{S('line',{x1:X(t),x2:X(t),y1:m.t,y2:Hc-m.b,stroke:'var(--rule)'},svg);S('text',{x:X(t),y:Hc-8,'text-anchor':'middle'},svg).textContent=Math.round(t*100)+'%';});
+  stb.forEach((r,i)=>{const y0=m.t+12+i*62;
+    S('text',{x:m.l-10,y:y0+bh+4,'text-anchor':'end',class:'lbl'},svg).textContent=r[0];
+    [[r[1],'var(--ink2)','player stayed with the same team'],[r[2],'var(--brand)','player moved to a new team']].forEach((b,j)=>{const y=y0+j*(bh+2);
+      const rc=S('rect',{x:X(0),y,width:Math.max(2,X(b[0])-X(0)),height:bh,rx:3,fill:b[1]},svg);
+      S('text',{x:X(b[0])+6,y:y+12},svg).textContent=Math.round(b[0]*100)+'%';
+      bindTip(rc,`<b>${r[0]}, ${b[2]}</b><br>prediction score ${Math.round(b[0]*100)}%`);});});
+  $('#stabChart').appendChild(svg);
+  const P=D.shots, sel=$('#clubSel');
+  const clubs=[...new Set(P.map(p=>p.club))].sort();
+  sel.innerHTML='<option value="">All clubs</option>'+clubs.map(c=>`<option>${c}</option>`).join('');
+  sel.value='Real Madrid';
+  $('#shotNote').textContent=`For every player who has played this season and took 50+ ACB shots in 2024-25 or 2025-26, we predict this season's shot mix from his most recent of those seasons. That is ${P.length} players, ${P.filter(p=>p.mv).length} of whom moved to a new team. Players new to the ACB are not included yet, because we have no ACB shots to go on.`;
+  function draw(){const c=sel.value, rows=P.filter(p=>!c||p.club===c).sort((a,b)=>b.th-a.th), box=$('#shotList'); box.innerHTML='';
+    rows.forEach(p=>{const r=H('div',{class:'shotrow'});
+      const bar=p.mv?`<div class="sbar"><span class="unk"></span><span style="width:${100*p.th}%;background:var(--accent)"></span></div>`
+        :`<div class="sbar"><span style="width:${100*p.rim}%;background:var(--c3)"></span><span style="width:${100*p.o2}%;background:var(--c2)"></span><span style="width:${100*p.th}%;background:var(--accent)"></span></div>`;
+      r.innerHTML=`<div class="who">${p.name}<small>${c?'':sh(p.club)+' · '}${p.basis}</small></div>${bar}<div class="pct">${p.mv?'<span class="tag">new club</span> ':''}${pct(p.th)} 3s</div>`;
+      bindTip(r,p.mv?`<b>${p.name}</b> (new club)<br>threes ${pct(p.th)} of shots<br>twos not shown: they change with the new team<br>based on ${p.basis}`:`<b>${p.name}</b><br>rim ${pct(p.rim)} · other 2s ${pct(p.o2)} · threes ${pct(p.th)}<br>based on ${p.basis}`);
+      box.appendChild(r);});}
+  sel.addEventListener('change',draw); draw();
+})();
+
+/* ---------- facts ---------- */
+$('#facts').innerHTML=[[`${D.ref_games.toLocaleString()}`,'games in the referee study'],['370k','shots charted, 2016-17 to 2025-26'],['20,000','seasons simulated each week'],[`${D.games_played}`,'2026-27 games scored so far']]
+  .map(f=>`<div><b>${f[0]}</b><span>${f[1]}</span></div>`).join('');
+</script>
